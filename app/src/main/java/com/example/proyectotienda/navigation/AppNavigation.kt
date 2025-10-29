@@ -6,7 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.proyectotienda.login.LoginScreen
 
-import com.example.proyectotienda.login.HomeScreen
+import com.example.proyectotienda.home.HomeScreen
 
 
 @Composable
