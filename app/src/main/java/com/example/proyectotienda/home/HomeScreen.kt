@@ -26,6 +26,7 @@ import androidx.compose.material3.ButtonDefaults
 import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product.Producto
 
+import com.example.proyectotienda.R
 
 
 
@@ -39,7 +40,16 @@ fun HomeScreen(navController: NavController) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("LF SNKRS") },
+                title = {
+                    // Reemplazamos el texto por un logo
+                    Image(
+                        painter = painterResource(id = R.drawable.trafalgar), // tu drawable
+                        contentDescription = "Logo",
+                        modifier = Modifier
+                            .height(70.dp)
+                            .fillMaxWidth(0.5f) // Ajusta tamaño del logo
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Volver")
