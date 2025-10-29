@@ -1,7 +1,6 @@
 package com.example.proyectotienda.home
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -41,13 +40,12 @@ fun HomeScreen(navController: NavController) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    // Reemplazamos el texto por un logo
                     Image(
-                        painter = painterResource(id = R.drawable.trafalgar), // tu drawable
+                        painter = painterResource(id = R.drawable.trafalgar),
                         contentDescription = "Logo",
                         modifier = Modifier
                             .height(70.dp)
-                            .fillMaxWidth(0.5f) // Ajusta tamaño del logo
+                            .fillMaxWidth(0.5f)
                     )
                 },
                 navigationIcon = {
@@ -163,7 +161,7 @@ fun ProductCard(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            //  Botón "Comprar"
+            //  Botón
             Button(
                 onClick = { /* Lógica de añadir al carrito */ },
                 modifier = Modifier

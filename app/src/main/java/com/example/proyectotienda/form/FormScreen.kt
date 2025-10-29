@@ -1,5 +1,6 @@
 package com.example.proyectotienda.form
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -8,9 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.proyectotienda.R
 import com.example.proyectotienda.navigation.Screens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +38,15 @@ fun FormScreen(navController: NavController) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("LF SNKRS") },
+                title = {
+                    Image(
+                        painter = painterResource(id = R.drawable.trafalgar),
+                        contentDescription = "Logo",
+                        modifier = Modifier
+                            .height(70.dp)
+                            .fillMaxWidth(0.5f)
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Volver")
@@ -129,7 +140,6 @@ fun FormScreen(navController: NavController) {
             // Botón de registro
             Button(
                 onClick = {
-                    // Validación simple y básica
                     usuarioError = usuario.isBlank()
                     passError = pass.isBlank() || !pass.any { it.isUpperCase() }
                     correoError = correo.isBlank() || !correo.contains("@") || !correo.contains(".")

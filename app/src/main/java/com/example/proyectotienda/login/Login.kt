@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -51,7 +50,6 @@ fun BodyContent(modifier: Modifier = Modifier, navController: NavController) {
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Logo en lugar del título
                 Image(
                     painter = painterResource(id = R.drawable.trafalgar),
                     contentDescription = "Logo",
