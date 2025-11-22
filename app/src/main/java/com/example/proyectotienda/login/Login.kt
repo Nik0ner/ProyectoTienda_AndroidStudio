@@ -4,39 +4,61 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.* // Necesario para collectAsState y LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+// ⬇️ Imports del ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyectotienda.R
+import com.example.proyectotienda.login.viewmodel.LoginViewModel
 import com.example.proyectotienda.navigation.Screens
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    viewModel: LoginViewModel = viewModel() // 1. Inyectamos el ViewModel
+) {
+    // 2. Observamos el estado completo
+    val state by viewModel.state.collectAsState()
+
+    // 3. Efecto de Navegación
+    LaunchedEffect(state.isLoginSuccessful) {
+        if (state.isLoginSuccessful) {
+            navController.navigate(Screens.HomeScreen.route) {
+                // Configuración para que el usuario no pueda volver al login con "atrás"
+                popUpTo(Screens.Login.route) { inclusive = true }
+            }
+            viewModel.resetLoginSuccessful()
+        }
+    }
+
     Scaffold { paddingValues ->
         BodyContent(
             Modifier.padding(paddingValues),
-            navController = navController
+            navController = navController,
+            viewModel = viewModel, // Pasamos el ViewModel al BodyContent
+            state = state // Pasamos el estado al BodyContent
         )
     }
 }
 
 @Composable
-fun BodyContent(modifier: Modifier = Modifier, navController: NavController) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
+fun BodyContent(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    viewModel: LoginViewModel,
+    state: com.example.proyectotienda.login.viewmodel.LoginUiState // ⬅️ Usamos el estado observado
+) {
     Box(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Tarjeta que encierra todo el login
         Surface(
             shape = RoundedCornerShape(24.dp),
             shadowElevation = 8.dp,
@@ -53,38 +75,54 @@ fun BodyContent(modifier: Modifier = Modifier, navController: NavController) {
                 Image(
                     painter = painterResource(id = R.drawable.trafalgar),
                     contentDescription = "Logo",
-                    modifier = Modifier
-                        .size(200.dp)
+                    modifier = Modifier.size(200.dp)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Campo de correo
                 OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
+                    value = state.email, // ⬅️ Leemos del estado
+                    onValueChange = { viewModel.onEmailChange(it) }, // ⬅️ Enviamos el evento
                     label = { Text("Correo electrónico") },
+                    isError = state.showEmailError,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (state.showEmailError) {
+                    Text("Ingrese un correo válido.", color = MaterialTheme.colorScheme.error)
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Campo de contraseña
                 OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
+                    value = state.password,
+                    onValueChange = { viewModel.onPasswordChange(it) },
                     label = { Text("Contraseña") },
+                    isError = state.showPasswordError,
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
+                if (state.showPasswordError) {
+                    Text("La contraseña es obligatoria.", color = MaterialTheme.colorScheme.error)
+                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Mensaje de error general (credenciales inválidas)
+                state.generalErrorMessage?.let { msg ->
+                    Text(msg, color = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Botón de login
                 Button(
-                    onClick = { navController.navigate(Screens.HomeScreen.route) },
+                    // ⬅️ Delegamos la lógica al ViewModel
+                    onClick = { viewModel.onLoginClick() },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("INICIAR SESIÓN")

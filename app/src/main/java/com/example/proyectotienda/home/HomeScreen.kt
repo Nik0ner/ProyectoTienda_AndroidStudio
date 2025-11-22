@@ -10,7 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,20 +21,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.compose.material3.ButtonDefaults
+import androidx.lifecycle.viewmodel.compose.viewModel // Importante para MVVM
+import com.example.proyectotienda.home.viewmodel.HomeViewModel // Importamos el ViewModel
 import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product.Producto
-
 import com.example.proyectotienda.R
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    // 1. INYECTAMOS EL VIEWMODEL
+    viewModel: HomeViewModel = viewModel()
+) {
 
-    val darkPurple = MaterialTheme.colorScheme.secondary
-    val onDarkPurple = MaterialTheme.colorScheme.onSecondary
+    val appBarcolor = MaterialTheme.colorScheme.primary
+    val appBarContent = MaterialTheme.colorScheme.onPrimary
 
     Scaffold(
         topBar = {
@@ -55,21 +57,22 @@ fun HomeScreen(navController: NavController) {
                 },
                 actions = {
                     IconButton(onClick = { navController.navigate(Screens.Login.route)}) {
-                        Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Person, contentDescription = "Perfil")
+                        Icon(imageVector = Icons.Filled.Person, contentDescription = "Perfil")
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = darkPurple,
-                    titleContentColor = onDarkPurple,
-                    actionIconContentColor = onDarkPurple,
-                    navigationIconContentColor = onDarkPurple
+                    containerColor = appBarcolor,
+                    actionIconContentColor = appBarContent,
+                    navigationIconContentColor = appBarContent,
+                    titleContentColor = appBarContent
                 )
             )
         }
     ) { paddingValues ->
         HomeBodyContent(
             Modifier.padding(paddingValues),
-            navController = navController
+            navController = navController,
+            viewModel = viewModel // Pasamos el ViewModel al Body
         )
     }
 }
@@ -77,31 +80,49 @@ fun HomeScreen(navController: NavController) {
 @Composable
 fun HomeBodyContent(
     modifier: Modifier = Modifier,
-    navController: NavController
+    navController: NavController,
+    viewModel: HomeViewModel // ⬅️ Recibimos el ViewModel
 ) {
-
-    val productosDeEjemplo = listOf(
-        Producto("1", "Jordan 1 Retro Dior", "Edición limitada", 7000.00, "url_imagen_1"),
-        Producto("2", "Jordan 1 Retro Dior", "Edición limitada", 7000.00, "url_imagen_2"),
-        Producto("3", "Jordan 1 Retro Dior", "Edición limitada", 7000.00, "url_imagen_3"),
-        Producto("4", "Jordan 1 Retro Dior", "Edición limitada", 7000.00, "url_imagen_4"),
-        Producto("5", "Jordan 1 Retro Dior", "Edición limitada", 7000.00, "url_imagen_5"),
-        Producto("6", "Jordan 1 Retro Dior", "Edición limitada", 7000.00, "url_imagen_6"),
-    )
+    // 2. OBSERVAMOS EL ESTADO (La lista de productos ya no está aquí)
+    val state by viewModel.state.collectAsState()
 
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(productosDeEjemplo) { producto -> // ⬅️ Usamos la lista de ejemplo
-                ProductCard(producto = producto, navController = navController)
+        // 3. MANEJO DEL ESTADO DE CARGA/ERROR
+        when {
+            state.isLoading -> {
+                // Muestra un indicador de carga mientras el ViewModel busca los datos
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 64.dp)
+                )
+            }
+            state.errorMessage != null -> {
+                // Muestra un error si ocurre
+                Text("Error al cargar productos: ${state.errorMessage}", color = Color.Red)
+            }
+            else -> {
+                // Muestra la lista cuando los datos están listos
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // 4. USAMOS LA LISTA DEL ESTADO
+                    items(state.productos) { producto ->
+                        ProductCard(
+                            producto = producto,
+                            navController = navController,
+                            // 5. ENVIAMOS EL EVENTO AL VIEWMODEL
+                            onComprarClick = { viewModel.onComprarClick(producto.id) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -111,6 +132,8 @@ fun HomeBodyContent(
 fun ProductCard(
     producto: Producto,
     navController: NavController,
+    // 6. RECIBIMOS EL CALLBACK (Función de evento)
+    onComprarClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ElevatedCard(
@@ -122,8 +145,9 @@ fun ProductCard(
                 .padding(bottom = 8.dp),
             horizontalAlignment = Alignment.Start
         ) {
+            // ... (Resto del diseño de la Card es el mismo) ...
 
-            //  Imagen del Producto
+            // Imagen del Producto
             Image(
                 painter = painterResource(id = com.example.proyectotienda.R.drawable.retro),
                 contentDescription = producto.nombre,
@@ -133,7 +157,7 @@ fun ProductCard(
                 contentScale = ContentScale.Crop
             )
 
-            //  Nombre y Descripción
+            // Nombre y Descripción
             Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                 Text(
                     text = producto.nombre,
@@ -152,7 +176,6 @@ fun ProductCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            //  Precio
             Text(
                 text = "$${"%.2f".format(producto.precio)}",
                 fontWeight = FontWeight.ExtraBold,
@@ -161,16 +184,17 @@ fun ProductCard(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            //  Botón
+            // Botón
             Button(
-                onClick = { /* Lógica de añadir al carrito */ },
+                // 7. CUANDO SE HACE CLICK, LLAMAMOS AL CALLBACK
+                onClick = { onComprarClick(producto.id) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp)
                     .padding(horizontal = 8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {

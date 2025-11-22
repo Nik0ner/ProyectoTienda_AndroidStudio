@@ -13,27 +13,34 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+// ⬇️ IMPORTS CLAVE PARA MVVM
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyectotienda.form.viewmodel.FormViewModel
 import com.example.proyectotienda.R
 import com.example.proyectotienda.navigation.Screens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FormScreen(navController: NavController) {
+fun FormScreen(
+    navController: NavController,
+    viewModel: FormViewModel = viewModel() // 1. Inyectamos el ViewModel aquí
+) {
+    // 2. Observamos el Estado (La fuente de verdad única)
+    val state by viewModel.state.collectAsState()
 
-    val darkPurple = MaterialTheme.colorScheme.secondary
-    val onDarkPurple = MaterialTheme.colorScheme.onSecondary
+    val appBarcolor = MaterialTheme.colorScheme.primary
+    val appBarContent = MaterialTheme.colorScheme.onPrimary
 
-    // Estados de los campos
-    var usuario by remember { mutableStateOf("") }
-    var pass by remember { mutableStateOf("") }
-    var correo by remember { mutableStateOf("") }
-
-    // Estados de error
-    var usuarioError by remember { mutableStateOf(false) }
-    var passError by remember { mutableStateOf(false) }
-    var correoError by remember { mutableStateOf(false) }
-    var passErrorMsg by remember { mutableStateOf("") }
-    var correoErrorMsg by remember { mutableStateOf("") }
+    // 3. Efecto de Navegación: Si el ViewModel dice "Éxito", navegamos.
+    LaunchedEffect(state.isRegistroExitoso) {
+        if (state.isRegistroExitoso) {
+            navController.navigate(Screens.HomeScreen.route) {
+                // Opcional: Evita volver al registro con el botón atrás
+                popUpTo(Screens.Login.route) { inclusive = false }
+            }
+            viewModel.resetRegistroExitoso()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -42,9 +49,7 @@ fun FormScreen(navController: NavController) {
                     Image(
                         painter = painterResource(id = R.drawable.trafalgar),
                         contentDescription = "Logo",
-                        modifier = Modifier
-                            .height(70.dp)
-                            .fillMaxWidth(0.5f)
+                        modifier = Modifier.height(70.dp).fillMaxWidth(0.5f)
                     )
                 },
                 navigationIcon = {
@@ -58,10 +63,10 @@ fun FormScreen(navController: NavController) {
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = darkPurple,
-                    titleContentColor = onDarkPurple,
-                    actionIconContentColor = onDarkPurple,
-                    navigationIconContentColor = onDarkPurple
+                    containerColor = appBarcolor,
+                    actionIconContentColor = appBarContent,
+                    navigationIconContentColor = appBarContent,
+                    titleContentColor = appBarContent
                 )
             )
         }
@@ -74,18 +79,15 @@ fun FormScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Usuario
+            // ---------------- USUARIO ----------------
             OutlinedTextField(
-                value = usuario,
-                onValueChange = {
-                    usuario = it
-                    usuarioError = false
-                },
+                value = state.usuario, // LEEMOS del estado
+                onValueChange = { viewModel.onUsuarioChange(it) }, // AVISAMOS al ViewModel
                 label = { Text("Usuario") },
-                isError = usuarioError,
+                isError = state.usuarioError, // LEEMOS el error
                 modifier = Modifier.fillMaxWidth()
             )
-            if (usuarioError) {
+            if (state.usuarioError) {
                 Text(
                     text = "El usuario es obligatorio",
                     color = MaterialTheme.colorScheme.error,
@@ -94,72 +96,45 @@ fun FormScreen(navController: NavController) {
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Contraseña
+            // ---------------- CONTRASEÑA ----------------
             OutlinedTextField(
-                value = pass,
-                onValueChange = {
-                    pass = it
-                    passError = false
-                    passErrorMsg = ""
-                },
+                value = state.pass,
+                onValueChange = { viewModel.onPassChange(it) },
                 label = { Text("Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
-                isError = passError,
+                isError = state.passError,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (passError) {
+            if (state.passError) {
                 Text(
-                    text = passErrorMsg,
+                    text = state.passErrorMsg, // Mensaje dinámico desde el ViewModel
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Correo
+            // ---------------- CORREO ----------------
             OutlinedTextField(
-                value = correo,
-                onValueChange = {
-                    correo = it
-                    correoError = false
-                    correoErrorMsg = ""
-                },
+                value = state.correo,
+                onValueChange = { viewModel.onCorreoChange(it) },
                 label = { Text("Correo") },
-                isError = correoError,
+                isError = state.correoError,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (correoError) {
+            if (state.correoError) {
                 Text(
-                    text = correoErrorMsg,
+                    text = state.correoErrorMsg,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón de registro
+            // ---------------- BOTÓN ----------------
             Button(
-                onClick = {
-                    usuarioError = usuario.isBlank()
-                    passError = pass.isBlank() || !pass.any { it.isUpperCase() }
-                    correoError = correo.isBlank() || !correo.contains("@") || !correo.contains(".")
-
-                    passErrorMsg = when {
-                        pass.isBlank() -> "La contraseña es obligatoria"
-                        !pass.any { it.isUpperCase() } -> "Debe contener al menos una mayúscula"
-                        else -> ""
-                    }
-
-                    correoErrorMsg = when {
-                        correo.isBlank() -> "El correo es obligatorio"
-                        !correo.contains("@") || !correo.contains(".") -> "Correo inválido"
-                        else -> ""
-                    }
-
-                    if (!usuarioError && !passError && !correoError) {
-                        navController.navigate(Screens.HomeScreen.route)
-                    }
-                },
+                // Toda la lógica compleja se fue al ViewModel. ¡Qué limpieza!
+                onClick = { viewModel.onRegistrarClick() },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Registrarse")
