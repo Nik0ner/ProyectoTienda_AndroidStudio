@@ -50,7 +50,7 @@ class LoginViewModel : ViewModel() {
 
         // 2. Simulación de Autenticación
         // En una app real, aquí llamarías a un servicio de autenticación (Firebase, API, etc.)
-        if (s.email == "test@tienda.com" && s.password == "Password123") {
+        if (s.email == "snk@gmail.com" && s.password == "Password123") {
             // Éxito: Activamos la bandera para la navegación
             _state.update { it.copy(isLoginSuccessful = true) }
         } else {
