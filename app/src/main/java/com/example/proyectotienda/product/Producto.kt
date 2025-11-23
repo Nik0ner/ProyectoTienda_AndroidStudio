@@ -5,7 +5,7 @@ data class Producto(
     val nombre: String,
     val descripcion: String,
     val precio: Double,
-    val imageUrl: String
+    //val imageUrl: String
 ){
 
 }

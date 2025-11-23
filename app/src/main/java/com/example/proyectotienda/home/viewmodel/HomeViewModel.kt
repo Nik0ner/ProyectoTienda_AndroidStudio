@@ -2,56 +2,80 @@ package com.example.proyectotienda.home.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.proyectotienda.product.Producto
+import com.example.proyectotienda.data.ProductoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay // Necesario para la simulación
+
 
 class HomeViewModel : ViewModel() {
 
-    // 1. Declaración del Estado: Lo que la Vista observará.
+    // ----------------------------------------------------
+    // 1. Capa de Datos (Data Layer)
+    // ----------------------------------------------------
+    // Instanciamos el Repositorio. En apps grandes, esto se inyectaría
+    // usando Hilt/Koin (Inyección de Dependencias) para facilitar el testing.
+    private val repository = ProductoRepository
+
+    // ----------------------------------------------------
+    // 2. Estado (State Layer)
+    // ----------------------------------------------------
+    // El estado observado por la vista (UI). Contiene la lista de productos.
     private val _state = MutableStateFlow(HomeUiState(isLoading = true))
     val state = _state.asStateFlow()
 
     init {
-        // Al crearse el ViewModel, automáticamente inicia la carga de datos.
-        cargarProductos()
+        // En lugar de cargar datos fijos, comenzamos a escuchar el Repositorio.
+        observeProductos()
     }
 
-    // 2. Lógica para obtener los productos (simulación de datos).
-    fun cargarProductos() {
-        // Usamos viewModelScope para ejecutar una corrutina de forma segura.
+    // ----------------------------------------------------
+    // 3. Lógica (Business Logic - READ)
+    // ----------------------------------------------------
+
+    /**
+     * Función que escucha los cambios en el Repositorio (la base de datos simulada).
+     * Se ejecuta automáticamente cada vez que se añade o elimina un producto.
+     */
+    private fun observeProductos() {
+        // Usamos viewModelScope para ejecutar la observación en el ciclo de vida del ViewModel.
         viewModelScope.launch {
-            // **SIMULACIÓN:** En una app real, aquí llamarías a un Repositorio (base de datos/API)
-
-            // Simular un retraso de carga (1 segundo) para ver el CircularProgressIndicator
-            delay(1000)
-
-            val productosDeEjemplo = listOf(
-                Producto("1", "Jordan 1 Retro Dior", "Edición limitada", 7000.00, "url_imagen_1"),
-                Producto("2", "Air Force 1 Snake", "Púrpura y Escamas", 1200.00, "url_imagen_2"),
-                Producto("3", "Nike Dunk Panda", "Clásico B/N", 950.00, "url_imagen_3"),
-                Producto("4", "Yeezy Foam Runner", "Diseño futurista", 5000.00, "url_imagen_4"),
-                Producto("5", "Adidas Ultraboost", "Running Performance", 800.00, "url_imagen_5"),
-                Producto("6", "New Balance 990v5", "Casual retro", 1300.00, "url_imagen_6"),
-            )
-
-            // 3. Actualización del Estado: Notifica a la Vista de los nuevos datos.
-            _state.update {
-                it.copy(
-                    productos = productosDeEjemplo,
-                    isLoading = false // Desactivamos el indicador de carga
-                )
+            // Recolectamos el Flow que emite el Repositorio.
+            repository.getProductos().collect { productos ->
+                // Cuando el Flow emite una nueva lista, actualizamos el estado.
+                _state.update { currentState ->
+                    currentState.copy(
+                        productos = productos,
+                        isLoading = false // Desactivamos el indicador de carga una vez que tenemos datos
+                    )
+                }
             }
         }
     }
 
-    // 4. Manejador de Eventos: La Vista lo llamará cuando se presione el botón.
+    // ----------------------------------------------------
+    // 4. Manejo de Eventos (Event Handling)
+    // ----------------------------------------------------
+
+    /**
+     * Evento al presionar el botón "Comprar".
+     */
     fun onComprarClick(productoId: String) {
-        println("Producto ${productoId} añadido al carrito.")
-        // **ACCIÓN FUTURA:** Aquí iría la lógica real para añadir el producto a una lista de carrito
-        // o navegar a una pantalla de detalle.
+        // FUTURO:
+        // 1. Llamar a repository.addProductoToCart(productoId)
+        // 2. Navegar a Screens.Detail(productoId)
+        println("FUTURO: Producto ${productoId} añadido al carrito.")
+    }
+
+    /**
+     * Evento para borrar un producto (simulando una acción de administrador).
+     */
+    fun onDeleteClick(productoId: String) {
+        // DELETE: Delegamos la acción de borrado al Repositorio.
+        viewModelScope.launch {
+            repository.deleteProducto(productoId)
+            // FUTURO: Añadir manejo de errores aquí (try/catch)
+        }
     }
 }

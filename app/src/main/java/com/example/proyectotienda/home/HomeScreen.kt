@@ -7,7 +7,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,8 +22,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.lifecycle.viewmodel.compose.viewModel // Importante para MVVM
-import com.example.proyectotienda.home.viewmodel.HomeViewModel // Importamos el ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyectotienda.home.viewmodel.HomeViewModel
 import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product.Producto
 import com.example.proyectotienda.R
@@ -50,9 +51,10 @@ fun HomeScreen(
                             .fillMaxWidth(0.5f)
                     )
                 },
+
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Volver")
+                    IconButton(onClick = { navController.navigate(route = Screens.ProductCreation.route)}) {
+                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Volver")
                     }
                 },
                 actions = {

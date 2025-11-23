@@ -9,6 +9,7 @@ import com.example.proyectotienda.form.FormScreen
 import com.example.proyectotienda.login.LoginScreen
 
 import com.example.proyectotienda.home.HomeScreen
+import com.example.proyectotienda.product_creation.ProductCreationScreen
 
 
 @Composable
@@ -27,9 +28,13 @@ fun AppNavigation() {
             HomeScreen(navController)
         }
 
-        composable(Screens.Form.route){
+        composable(route = Screens.Form.route){
             FormScreen(navController)
 
+        }
+
+        composable(route = Screens.ProductCreation.route) {
+            ProductCreationScreen(navController)
         }
     }
 }
