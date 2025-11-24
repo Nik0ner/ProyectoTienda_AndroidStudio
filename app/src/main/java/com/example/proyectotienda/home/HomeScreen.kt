@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -35,6 +36,7 @@ fun HomeScreen(
     // 1. INYECTAMOS EL VIEWMODEL
     viewModel: HomeViewModel = viewModel()
 ) {
+    // ... (El Scaffold y TopBar se mantienen igual) ...
 
     val appBarcolor = MaterialTheme.colorScheme.primary
     val appBarContent = MaterialTheme.colorScheme.onPrimary
@@ -52,9 +54,10 @@ fun HomeScreen(
                     )
                 },
 
+                // ⬅️ Botón FAB (Add) en la barra superior (navigationIcon)
                 navigationIcon = {
                     IconButton(onClick = { navController.navigate(route = Screens.ProductCreation.route)}) {
-                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Volver")
+                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Crear Producto")
                     }
                 },
                 actions = {
@@ -74,7 +77,7 @@ fun HomeScreen(
         HomeBodyContent(
             Modifier.padding(paddingValues),
             navController = navController,
-            viewModel = viewModel // Pasamos el ViewModel al Body
+            viewModel = viewModel
         )
     }
 }
@@ -83,19 +86,16 @@ fun HomeScreen(
 fun HomeBodyContent(
     modifier: Modifier = Modifier,
     navController: NavController,
-    viewModel: HomeViewModel // ⬅️ Recibimos el ViewModel
+    viewModel: HomeViewModel
 ) {
-    // 2. OBSERVAMOS EL ESTADO (La lista de productos ya no está aquí)
     val state by viewModel.state.collectAsState()
 
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 3. MANEJO DEL ESTADO DE CARGA/ERROR
         when {
             state.isLoading -> {
-                // Muestra un indicador de carga mientras el ViewModel busca los datos
                 CircularProgressIndicator(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
@@ -103,11 +103,9 @@ fun HomeBodyContent(
                 )
             }
             state.errorMessage != null -> {
-                // Muestra un error si ocurre
                 Text("Error al cargar productos: ${state.errorMessage}", color = Color.Red)
             }
             else -> {
-                // Muestra la lista cuando los datos están listos
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(10.dp),
@@ -115,13 +113,12 @@ fun HomeBodyContent(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // 4. USAMOS LA LISTA DEL ESTADO
                     items(state.productos) { producto ->
                         ProductCard(
                             producto = producto,
                             navController = navController,
-                            // 5. ENVIAMOS EL EVENTO AL VIEWMODEL
                             onComprarClick = { viewModel.onComprarClick(producto.id) }
+                            // No necesitamos un onEditClick aquí, la navegación es directa.
                         )
                     }
                 }
@@ -134,73 +131,102 @@ fun HomeBodyContent(
 fun ProductCard(
     producto: Producto,
     navController: NavController,
-    // 6. RECIBIMOS EL CALLBACK (Función de evento)
     onComprarClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ElevatedCard(
-        modifier = modifier.width(180.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .height(280.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalAlignment = Alignment.Start
+                .fillMaxSize()
         ) {
-            // ... (Resto del diseño de la Card es el mismo) ...
-
-            // Imagen del Producto
-            Image(
-                painter = painterResource(id = com.example.proyectotienda.R.drawable.retro),
-                contentDescription = producto.nombre,
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-                contentScale = ContentScale.Crop
-            )
-
-            // Nombre y Descripción
-            Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                Text(
-                    text = producto.nombre,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = producto.descripcion,
-                    color = Color.Gray,
-                    fontSize = 12.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "$${"%.2f".format(producto.precio)}",
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Botón
-            Button(
-                // 7. CUANDO SE HACE CLICK, LLAMAMOS AL CALLBACK
-                onClick = { onComprarClick(producto.id) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .padding(horizontal = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                shape = RoundedCornerShape(8.dp)
+                    .padding(bottom = 8.dp),
+                horizontalAlignment = Alignment.Start
             ) {
-                Text("Comprar", fontWeight = FontWeight.SemiBold)
+                // ... (El resto del contenido de la columna, Imagen, Texto, etc., se mantiene igual) ...
+
+                // Imagen del Producto
+                Image(
+                    painter = painterResource(id = com.example.proyectotienda.R.drawable.retro),
+                    contentDescription = producto.nombre,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Nombre y Descripción
+                Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                    Text(
+                        text = producto.nombre,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = producto.descripcion,
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "$${"%.2f".format(producto.precio)}",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Botón
+                Button(
+                    onClick = { onComprarClick(producto.id) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .padding(horizontal = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Comprar", fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            // ⬅️ ÍCONO DE EDICIÓN DENTRO DE UN CÍRCULO CON FONDO
+            Surface(
+                onClick = {
+                    // NAVEGAR a ProductUpdateScreen con el ID del producto
+                    navController.navigate(Screens.ProductUpdate.withId(producto.id))
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd) // Posicionado en la esquina superior izquierda
+                    .padding(8.dp) // Pequeño margen desde el borde de la tarjeta
+                    .size(32.dp), // Tamaño del círculo
+                shape = CircleShape, // ⬅️ Forma circular
+                color = Color.White.copy(alpha = 0.8f), // Fondo blanco semitransparente
+                shadowElevation = 4.dp // Pequeña sombra
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Editar Producto",
+                        tint = MaterialTheme.colorScheme.primary, // Color primario para el lápiz
+                        modifier = Modifier.size(18.dp) // Tamaño del icono dentro del círculo
+                    )
+                }
             }
         }
     }

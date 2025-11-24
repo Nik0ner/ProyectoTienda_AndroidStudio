@@ -1,22 +1,25 @@
 package com.example.proyectotienda.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.proyectotienda.form.FormScreen
-
-import com.example.proyectotienda.login.LoginScreen
-
 import com.example.proyectotienda.home.HomeScreen
+import com.example.proyectotienda.login.LoginScreen
+import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product_creation.ProductCreationScreen
+import com.example.proyectotienda.product_update.ProductUpdateScreen
 
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController,
+    NavHost(
+        navController = navController,
         startDestination = Screens.HomeScreen.route
     ){
 
@@ -30,11 +33,23 @@ fun AppNavigation() {
 
         composable(route = Screens.Form.route){
             FormScreen(navController)
-
         }
 
         composable(route = Screens.ProductCreation.route) {
             ProductCreationScreen(navController)
+        }
+
+        composable(
+            route = Screens.ProductUpdate.route + "/{productId}",
+            arguments = listOf(
+                navArgument("productId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId") ?: ""
+            ProductUpdateScreen(
+                navController = navController,
+                productId = productId
+            )
         }
     }
 }

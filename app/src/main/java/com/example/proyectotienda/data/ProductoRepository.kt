@@ -22,6 +22,11 @@ object ProductoRepository {
     // READ (Leer): El ViewModel se suscribe a este Flow.
     fun getProductos() = productosDB.asStateFlow()
 
+    fun getProductoById(id: String): Producto? {
+        // Usa 'find' para buscar el producto por el ID, devuelve null si no existe.
+        return productosDB.value.find { it.id == id }
+    }
+
     // CREATE (Crear): Añade un producto y notifica a los observadores.
     fun addProducto(producto: Producto) {
         // Aseguramos un ID único simple para la simulación
@@ -30,6 +35,16 @@ object ProductoRepository {
 
         productosDB.value.add(newProducto)
         productosDB.updateValue(productosDB.value)
+    }
+
+    // UPDATE (Actualizar): Agregar cambios al producto
+    fun updateProducto(updatedProducto: Producto){
+        val index = productosDB.value.indexOfFirst { it.id == updatedProducto.id }
+
+        if (index != -1) {
+            productosDB.value[index] = updatedProducto
+            productosDB.updateValue(productosDB.value)
+        }
     }
 
     // DELETE (Borrar): (Lo usaremos más adelante en la Home Screen)
