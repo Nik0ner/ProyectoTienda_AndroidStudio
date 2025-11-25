@@ -16,7 +16,7 @@ Incluye funcionalidades básicas de login, registro y navegación entre pantalla
 
 - **Kotlin**  
 - **Jetpack Compose**  
-- **Material 3 (Material You)**  
+- **Material 3**  
 - **Navigation Compose**  
 
 ## 🚀 Cómo ejecutar el proyecto
