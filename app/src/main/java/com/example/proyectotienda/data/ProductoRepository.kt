@@ -1,58 +1,79 @@
 package com.example.proyectotienda.data
 
 import com.example.proyectotienda.product.Producto
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 object ProductoRepository {
-    private val productosDB = MutableStateFlow(
-        mutableListOf(
-            Producto("1", "Jordan 1 Retro Dior", "Edición limitada", 7000.00),
-            Producto("2", "Air Force 1 Snake", "Púrpura y Escamas", 1200.00),
-            Producto("3", "Nike Dunk Panda", "Clásico B/N", 950.00),
-        )
-    )
 
-    private fun <T> MutableStateFlow<T>.updateValue(newValue: T) {
-        this.value = newValue
+    // ⬅️ 1. Referencia a la base de datos Firestore
+    private val db = FirebaseFirestore.getInstance()
+    private val productosCollection = db.collection("productos")
+
+    // ----------------------------------------------------
+    // READ (LEER): Usamos un Flow para escuchar cambios en tiempo real
+    // ----------------------------------------------------
+
+    fun getProductos() = callbackFlow {
+        // Usa un Listener para escuchar la colección
+        val subscription = productosCollection
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error) // Cierra el Flow si hay un error
+                    return@addSnapshotListener
+                }
+
+                // Mapea los documentos de Firebase a objetos Producto
+                val productos = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject(Producto::class.java)
+                } ?: emptyList()
+
+                // Envía la nueva lista al Flow
+                trySend(productos)
+            }
+
+        // ⬅️ Cuando el colector deja de escuchar, se cierra el listener
+        awaitClose { subscription.remove() }
     }
 
-    // READ (Leer): El ViewModel se suscribe a este Flow.
-    fun getProductos() = productosDB.asStateFlow()
+    // ----------------------------------------------------
+    // READ BY ID (LEER POR ID): Función suspendida para la edición
+    // ----------------------------------------------------
 
-    fun getProductoById(id: String): Producto? {
-        // Usa 'find' para buscar el producto por el ID, devuelve null si no existe.
-        return productosDB.value.find { it.id == id }
-    }
-
-    // CREATE (Crear): Añade un producto y notifica a los observadores.
-    fun addProducto(producto: Producto) {
-        // Aseguramos un ID único simple para la simulación
-        val newId = (productosDB.value.size + 1).toString()
-        val newProducto = producto.copy(id = newId)
-
-        productosDB.value.add(newProducto)
-        productosDB.updateValue(productosDB.value)
-    }
-
-    // UPDATE (Actualizar): Agregar cambios al producto
-    fun updateProducto(updatedProducto: Producto){
-        val index = productosDB.value.indexOfFirst { it.id == updatedProducto.id }
-
-        if (index != -1) {
-            productosDB.value[index] = updatedProducto
-            productosDB.updateValue(productosDB.value)
+    suspend fun getProductoById(id: String): Producto? {
+        return try {
+            val document = productosCollection.document(id).get().await()
+            document.toObject(Producto::class.java)
+        } catch (e: Exception) {
+            null
         }
     }
 
-    // DELETE (Borrar): (Lo usaremos más adelante en la Home Screen)
-    fun deleteProducto(productoId: String) {
-        val originalSize = productosDB.value.size
-        productosDB.value.removeIf { it.id == productoId }
-        if (productosDB.value.size < originalSize) {
-            productosDB.updateValue(productosDB.value)
-        }
+    // ----------------------------------------------------
+    // CREATE (CREAR): Función suspendida para subir datos
+    // ----------------------------------------------------
+
+    suspend fun addProducto(producto: Producto) {
+        // Firestore crea automáticamente el ID del documento
+        productosCollection.add(producto).await()
+    }
+
+    // ----------------------------------------------------
+    // UPDATE (ACTUALIZAR): Usa el ID del producto para actualizar
+    // ----------------------------------------------------
+
+    suspend fun updateProducto(updatedProducto: Producto) {
+        // Usamos set(updatedProducto) para reemplazar el documento completo
+        productosCollection.document(updatedProducto.id).set(updatedProducto).await()
+    }
+
+    // ----------------------------------------------------
+    // DELETE (BORRAR): Usa el ID del producto para borrar
+    // ----------------------------------------------------
+
+    suspend fun deleteProducto(productoId: String) {
+        productosCollection.document(productoId).delete().await()
     }
 }

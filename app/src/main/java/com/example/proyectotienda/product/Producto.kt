@@ -1,11 +1,16 @@
 package com.example.proyectotienda.product
 
-data class Producto(
-    val id: String,
-    val nombre: String,
-    val descripcion: String,
-    val precio: Double,
-    //val imageUrl: String
-){
+import com.google.firebase.firestore.DocumentId
 
+data class Producto(
+
+    @DocumentId
+    var id: String = "",
+
+    var nombre: String = "",
+    var descripcion: String = "",
+    var precio: Double = 0.0
+
+) {
+    constructor() : this("", "", "", 0.0)
 }

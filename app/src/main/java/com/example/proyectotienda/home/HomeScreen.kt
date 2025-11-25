@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+// import androidx.compose.ui.tooling.preview.Preview // ⬅️ Borrado (innecesario aquí)
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -29,6 +31,7 @@ import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product.Producto
 import com.example.proyectotienda.R
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -36,8 +39,6 @@ fun HomeScreen(
     // 1. INYECTAMOS EL VIEWMODEL
     viewModel: HomeViewModel = viewModel()
 ) {
-    // ... (El Scaffold y TopBar se mantienen igual) ...
-
     val appBarcolor = MaterialTheme.colorScheme.primary
     val appBarContent = MaterialTheme.colorScheme.onPrimary
 
@@ -53,8 +54,6 @@ fun HomeScreen(
                             .fillMaxWidth(0.5f)
                     )
                 },
-
-                // ⬅️ Botón FAB (Add) en la barra superior (navigationIcon)
                 navigationIcon = {
                     IconButton(onClick = { navController.navigate(route = Screens.ProductCreation.route)}) {
                         Icon(imageVector = Icons.Filled.Add, contentDescription = "Crear Producto")
@@ -117,8 +116,9 @@ fun HomeBodyContent(
                         ProductCard(
                             producto = producto,
                             navController = navController,
-                            onComprarClick = { viewModel.onComprarClick(producto.id) }
-                            // No necesitamos un onEditClick aquí, la navegación es directa.
+                            onComprarClick = { viewModel.onComprarClick(producto.id) },
+                            // ⬅️ CORRECCIÓN 1: Usar el nombre de función correcto en el ViewModel
+                            onDeleteClick = {viewModel.onDeleteClick(producto.id) }
                         )
                     }
                 }
@@ -132,6 +132,8 @@ fun ProductCard(
     producto: Producto,
     navController: NavController,
     onComprarClick: (String) -> Unit,
+    // ⬅️ CORRECCIÓN 2: Declarar el parámetro 'onDeleteClick' en el Composable
+    onDeleteClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ElevatedCard(
@@ -149,8 +151,6 @@ fun ProductCard(
                     .padding(bottom = 8.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                // ... (El resto del contenido de la columna, Imagen, Texto, etc., se mantiene igual) ...
-
                 // Imagen del Producto
                 Image(
                     painter = painterResource(id = com.example.proyectotienda.R.drawable.retro),
@@ -188,46 +188,77 @@ fun ProductCard(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Botón
-                Button(
-                    onClick = { onComprarClick(producto.id) },
+                // ⬅️ CORRECCIÓN 3: Reestructuración del ROW (Botón Comprar y Botón Eliminar)
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(40.dp)
                         .padding(horizontal = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Comprar", fontWeight = FontWeight.SemiBold)
+                    // Botón Comprar (Ocupa el espacio restante)
+                    Button(
+                        onClick = { onComprarClick(producto.id) },
+                        modifier = Modifier
+                            .weight(1f) // ⬅️ Ocupa la mayor parte del espacio
+                            .height(40.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Comprar", fontWeight = FontWeight.SemiBold)
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Ícono de Eliminar (Surface de peligro)
+                    Surface(
+                        onClick = {
+                            onDeleteClick(producto.id)
+                        },
+                        modifier = Modifier
+                            .size(40.dp), // Tamaño igual a la altura del botón
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.error, // Fondo Rojo
+                        shadowElevation = 4.dp
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Eliminar Producto",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
                 }
             }
 
-            // ⬅️ ÍCONO DE EDICIÓN DENTRO DE UN CÍRCULO CON FONDO
             Surface(
                 onClick = {
-                    // NAVEGAR a ProductUpdateScreen con el ID del producto
                     navController.navigate(Screens.ProductUpdate.withId(producto.id))
                 },
                 modifier = Modifier
-                    .align(Alignment.TopEnd) // Posicionado en la esquina superior izquierda
-                    .padding(8.dp) // Pequeño margen desde el borde de la tarjeta
-                    .size(32.dp), // Tamaño del círculo
-                shape = CircleShape, // ⬅️ Forma circular
-                color = Color.White.copy(alpha = 0.8f), // Fondo blanco semitransparente
-                shadowElevation = 4.dp // Pequeña sombra
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(32.dp),
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.8f),
+                shadowElevation = 4.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Filled.Edit,
                         contentDescription = "Editar Producto",
-                        tint = MaterialTheme.colorScheme.primary, // Color primario para el lápiz
-                        modifier = Modifier.size(18.dp) // Tamaño del icono dentro del círculo
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
+
+            // ⬅️ ELIMINACIÓN: El Surface de Eliminar que estaba aquí arriba (Alignment.TopEnd)
+            // Ha sido ELIMINADO porque ahora está en la parte inferior.
         }
     }
 }

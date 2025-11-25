@@ -129,7 +129,7 @@ fun ProductCreationContent(
                 // 🛑 CORRECCIÓN CRÍTICA: Debes usar el valor 'it' que proporciona el callback
                 viewModel.onPrecioChange(it)
             },
-            label = { Text("Precio (€ o $)") },
+            label = { Text("Precio ($)") },
             isError = estado.errorPrecio,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,

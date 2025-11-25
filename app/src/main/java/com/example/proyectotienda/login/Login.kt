@@ -4,11 +4,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.* // Necesario para collectAsState y LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 // ⬇️ Imports del ViewModel
@@ -16,20 +17,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyectotienda.R
 import com.example.proyectotienda.login.viewmodel.LoginViewModel
 import com.example.proyectotienda.navigation.Screens
+import com.example.proyectotienda.ui.theme.ProyectoTiendaTheme
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: LoginViewModel = viewModel() // 1. Inyectamos el ViewModel
+    viewModel: LoginViewModel = viewModel()
 ) {
-    // 2. Observamos el estado completo
     val state by viewModel.state.collectAsState()
 
     // 3. Efecto de Navegación
     LaunchedEffect(state.isLoginSuccessful) {
         if (state.isLoginSuccessful) {
             navController.navigate(Screens.HomeScreen.route) {
-                // Configuración para que el usuario no pueda volver al login con "atrás"
                 popUpTo(Screens.Login.route) { inclusive = true }
             }
             viewModel.resetLoginSuccessful()
@@ -40,8 +40,8 @@ fun LoginScreen(
         BodyContent(
             Modifier.padding(paddingValues),
             navController = navController,
-            viewModel = viewModel, // Pasamos el ViewModel al BodyContent
-            state = state // Pasamos el estado al BodyContent
+            viewModel = viewModel,
+            state = state
         )
     }
 }
@@ -51,7 +51,7 @@ fun BodyContent(
     modifier: Modifier = Modifier,
     navController: NavController,
     viewModel: LoginViewModel,
-    state: com.example.proyectotienda.login.viewmodel.LoginUiState // ⬅️ Usamos el estado observado
+    state: com.example.proyectotienda.login.viewmodel.LoginUiState
 ) {
     Box(
         modifier = modifier
@@ -82,8 +82,8 @@ fun BodyContent(
 
                 // Campo de correo
                 OutlinedTextField(
-                    value = state.email, // ⬅️ Leemos del estado
-                    onValueChange = { viewModel.onEmailChange(it) }, // ⬅️ Enviamos el evento
+                    value = state.email,
+                    onValueChange = { viewModel.onEmailChange(it) },
                     label = { Text("Correo electrónico") },
                     isError = state.showEmailError,
                     singleLine = true,
@@ -121,7 +121,6 @@ fun BodyContent(
 
                 // Botón de login
                 Button(
-                    // ⬅️ Delegamos la lógica al ViewModel
                     onClick = { viewModel.onLoginClick() },
                     modifier = Modifier.fillMaxWidth()
                 ) {

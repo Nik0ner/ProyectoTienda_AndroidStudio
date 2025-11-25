@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -63,6 +64,16 @@ dependencies {
     implementation("androidx.compose.animation:animation:1.7.0")
     implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Dependencia de la Plataforma Firebase (Importante para que todo sea compatible)
+    implementation(platform("com.google.firebase:firebase-bom:32.7.4")) // Revisa la versión más reciente
+
+    // Firebase Firestore (Base de Datos)
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // Kotlin Coroutine Extensions para Firebase (para usar await/suspending functions)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
 
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.foundation)
