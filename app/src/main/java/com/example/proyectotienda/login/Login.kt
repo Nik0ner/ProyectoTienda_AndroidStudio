@@ -1,6 +1,7 @@
 package com.example.proyectotienda.login
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -8,16 +9,28 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
-// ⬇️ Imports del ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.proyectotienda.R
 import com.example.proyectotienda.login.viewmodel.LoginViewModel
 import com.example.proyectotienda.navigation.Screens
-import com.example.proyectotienda.ui.theme.ProyectoTiendaTheme
+import com.example.proyectotienda.ui.theme.AmarilloClaro
+import com.example.proyectotienda.ui.theme.YellowNeonBright
+// Imports para los íconos y visual transformation
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+
 
 @Composable
 fun LoginScreen(
@@ -26,7 +39,7 @@ fun LoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    // 3. Efecto de Navegación
+    // Efecto de Navegación
     LaunchedEffect(state.isLoginSuccessful) {
         if (state.isLoginSuccessful) {
             navController.navigate(Screens.HomeScreen.route) {
@@ -53,16 +66,26 @@ fun BodyContent(
     viewModel: LoginViewModel,
     state: com.example.proyectotienda.login.viewmodel.LoginUiState
 ) {
+
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
+        // --- INICIO: CARD CON DEGRADADO ---
         Surface(
+            color = Color.Transparent,
             shape = RoundedCornerShape(24.dp),
-            shadowElevation = 8.dp,
             modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(AmarilloClaro, YellowNeonBright)
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                )
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
@@ -80,11 +103,11 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Campo de correo
+                // --- CAMPO DE CORREO ---
                 OutlinedTextField(
                     value = state.email,
                     onValueChange = { viewModel.onEmailChange(it) },
-                    label = { Text("Correo electrónico") },
+                    label = { Text("Correo electrónico", color = MaterialTheme.colorScheme.surface) },
                     isError = state.showEmailError,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -95,23 +118,40 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Campo de contraseña
+                // --- ⬇️ CAMPO DE CONTRASEÑA CORREGIDO ⬇️ ---
                 OutlinedTextField(
                     value = state.password,
                     onValueChange = { viewModel.onPasswordChange(it) },
-                    label = { Text("Contraseña") },
+                    label = { Text("Contraseña", color = MaterialTheme.colorScheme.surface) },
                     isError = state.showPasswordError,
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+
+                    // 1. Lógica de transformación visual (Puntos vs Texto)
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+
+                    // 2. Ícono del ojo funcional
+                    trailingIcon = {
+                        val image = if (passwordVisible)
+                            Icons.Filled.Visibility
+                        else
+                            Icons.Filled.VisibilityOff
+
+                        // Botón que alterna la variable passwordVisible
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(imageVector = image, contentDescription = "Mostrar/Ocultar contraseña")
+                        }
+                    }
                 )
+                // --- FIN CAMPO DE CONTRASEÑA ---
+
                 if (state.showPasswordError) {
                     Text("La contraseña es obligatoria.", color = MaterialTheme.colorScheme.error)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Mensaje de error general (credenciales inválidas)
+                // Mensaje de error general
                 state.generalErrorMessage?.let { msg ->
                     Text(msg, color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.height(12.dp))
@@ -119,9 +159,13 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Botón de login
+                // --- BOTÓN DE LOGIN ---
                 Button(
                     onClick = { viewModel.onLoginClick() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Black,
+                        contentColor = YellowNeonBright
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("INICIAR SESIÓN")
@@ -129,18 +173,23 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Botón de registro
+                // Botones de texto
                 TextButton(
                     onClick = { navController.navigate(Screens.Form.route) }
                 ) {
-                    Text("¿No tienes cuenta? Regístrate")
+                    Text(
+                        "¿No tienes cuenta? Regístrate",
+                        color = Color.Black
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Recuperar contraseña
                 TextButton(onClick = { /* TODO: Recuperar contraseña */ }) {
-                    Text("¿Olvidaste tu contraseña?")
+                    Text(
+                        "¿Olvidaste tu contraseña?",
+                        color = Color.Black
+                    )
                 }
             }
         }
