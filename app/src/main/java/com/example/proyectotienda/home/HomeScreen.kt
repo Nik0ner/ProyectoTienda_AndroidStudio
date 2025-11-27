@@ -30,7 +30,7 @@ import com.example.proyectotienda.home.viewmodel.HomeViewModel
 import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product.Producto
 import com.example.proyectotienda.R
-
+import androidx.compose.material3.MaterialTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

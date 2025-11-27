@@ -99,7 +99,7 @@ fun FormScreen(
             // ---------------- CONTRASEÑA ----------------
             OutlinedTextField(
                 value = state.pass,
-                onValueChange = { viewModel.onPassChange(it) },
+                onValueChange = { viewModel.onPasswordChange(it) },
                 label = { Text("Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
                 isError = state.passError,
@@ -117,7 +117,7 @@ fun FormScreen(
             // ---------------- CORREO ----------------
             OutlinedTextField(
                 value = state.correo,
-                onValueChange = { viewModel.onCorreoChange(it) },
+                onValueChange = { viewModel.onEmailChange(it) },
                 label = { Text("Correo") },
                 isError = state.correoError,
                 modifier = Modifier.fillMaxWidth()

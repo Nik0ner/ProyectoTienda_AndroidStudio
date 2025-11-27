@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 
 
 @Composable
@@ -110,7 +111,30 @@ fun BodyContent(
                     label = { Text("Correo electrónico", color = MaterialTheme.colorScheme.surface) },
                     isError = state.showEmailError,
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        // Fondo del TextField (usa el color del fondo amarillo)
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+
+                        // BORDES NEGROS
+                        focusedIndicatorColor = Color.Black,
+                        unfocusedIndicatorColor = Color.Black,
+
+                        // TEXTO NEGRO
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        cursorColor = Color.Black,
+
+                        // LABEL también negro
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+
+                        // COLOR DE ERROR (por si lo usas)
+                        errorIndicatorColor = MaterialTheme.colorScheme.error,
+                        errorLabelColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
                 if (state.showEmailError) {
                     Text("Ingrese un correo válido.", color = MaterialTheme.colorScheme.error)
@@ -122,26 +146,53 @@ fun BodyContent(
                 OutlinedTextField(
                     value = state.password,
                     onValueChange = { viewModel.onPasswordChange(it) },
-                    label = { Text("Contraseña", color = MaterialTheme.colorScheme.surface) },
+                    label = { Text("Contraseña") },
                     isError = state.showPasswordError,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
 
-                    // 1. Lógica de transformación visual (Puntos vs Texto)
+                    // Mostrar / ocultar contraseña
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
 
-                    // 2. Ícono del ojo funcional
                     trailingIcon = {
                         val image = if (passwordVisible)
                             Icons.Filled.Visibility
                         else
                             Icons.Filled.VisibilityOff
 
-                        // Botón que alterna la variable passwordVisible
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(imageVector = image, contentDescription = "Mostrar/Ocultar contraseña")
+                            Icon(
+                                imageVector = image,
+                                contentDescription = "Mostrar/Ocultar contraseña",
+                                tint = Color.Black // Ícono negro para que contraste con el fondo amarillo
+                            )
                         }
-                    }
+                    },
+
+                    colors = TextFieldDefaults.colors(
+                        // Fondo transparente (usa el fondo amarillo)
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+
+                        // Borde negro
+                        focusedIndicatorColor = Color.Black,
+                        unfocusedIndicatorColor = Color.Black,
+
+                        // Texto negro
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        cursorColor = Color.Black,
+
+                        // Label negro
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+
+                        // Colores de error
+                        errorIndicatorColor = MaterialTheme.colorScheme.error,
+                        errorLabelColor = MaterialTheme.colorScheme.error
+                    ),
+
+                    shape = RoundedCornerShape(12.dp)
                 )
                 // --- FIN CAMPO DE CONTRASEÑA ---
 
@@ -161,7 +212,7 @@ fun BodyContent(
 
                 // --- BOTÓN DE LOGIN ---
                 Button(
-                    onClick = { viewModel.onLoginClick() },
+                    onClick = { viewModel.onLoginClick(state) },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Black,
                         contentColor = YellowNeonBright
