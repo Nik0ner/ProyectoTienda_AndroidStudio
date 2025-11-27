@@ -32,6 +32,7 @@ import com.example.proyectotienda.product.Producto
 import com.example.proyectotienda.R
 import androidx.compose.material3.MaterialTheme
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -45,23 +46,24 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                modifier = Modifier.height(110.dp),
                 title = {
                     Image(
                         painter = painterResource(id = R.drawable.trafalgar),
                         contentDescription = "Logo",
                         modifier = Modifier
-                            .height(70.dp)
+                            .height(240.dp)
                             .fillMaxWidth(0.5f)
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate(route = Screens.ProductCreation.route)}) {
-                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Crear Producto")
+                    IconButton(onClick = { navController.navigate(route = Screens.ProductCreation.route)}, modifier = Modifier.fillMaxHeight()) {
+                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Crear Producto", modifier = Modifier.size(32.dp))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate(Screens.Login.route)}) {
-                        Icon(imageVector = Icons.Filled.Person, contentDescription = "Perfil")
+                    IconButton(onClick = { navController.navigate(Screens.Login.route)}, modifier = Modifier.fillMaxHeight()) {
+                        Icon(imageVector = Icons.Filled.Person, contentDescription = "Perfil", modifier = Modifier.size(32.dp))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(

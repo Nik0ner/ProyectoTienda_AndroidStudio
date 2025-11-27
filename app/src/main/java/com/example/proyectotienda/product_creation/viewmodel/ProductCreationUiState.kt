@@ -1,14 +1,18 @@
 package com.example.proyectotienda.product_creation.viewmodel
 
+import android.net.Uri // 💥 IMPORTACIÓN NECESARIA
+
 data class ProductCreationUiState(
     val nombre: String = "",
     val descripcion: String = "",
-    val precio: String = "", // Usamos String para la entrada de texto
+    val precio: String = "",
 
     val errorNombre: Boolean = false,
     val errorPrecio: Boolean = false,
 
-    // Bandera para notificar a la Vista cuando la creación fue exitosa y debe navegar
-    val creacionExitosa: Boolean = false
-)
+    val creacionExitosa: Boolean = false,
 
+    // 💡 Propiedades para la imagen
+    val imagenUri: Uri? = null,
+    val showSourceDialog: Boolean = false
+)

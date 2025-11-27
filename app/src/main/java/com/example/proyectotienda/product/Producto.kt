@@ -9,8 +9,9 @@ data class Producto(
 
     var nombre: String = "",
     var descripcion: String = "",
-    var precio: Double = 0.0
+    var precio: Double = 0.0,
+    var imagenUrl: String = ""
 
 ) {
-    constructor() : this("", "", "", 0.0)
+    constructor() : this("", "", "", 0.0,"")
 }

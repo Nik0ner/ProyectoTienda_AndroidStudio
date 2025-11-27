@@ -45,21 +45,22 @@ fun FormScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                modifier = Modifier.height(110.dp),
                 title = {
                     Image(
                         painter = painterResource(id = R.drawable.trafalgar),
                         contentDescription = "Logo",
-                        modifier = Modifier.height(70.dp).fillMaxWidth(0.5f)
+                        modifier = Modifier.height(240.dp).fillMaxWidth(0.5f)
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Volver")
+                    IconButton(onClick = { navController.popBackStack() }, modifier = Modifier.fillMaxHeight()) {
+                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Volver", modifier = Modifier.size(32.dp))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate(Screens.Login.route) }) {
-                        Icon(imageVector = Icons.Filled.Person, contentDescription = "Perfil")
+                    IconButton(onClick = { navController.navigate(Screens.Login.route) }, modifier = Modifier.fillMaxHeight()) {
+                        Icon(imageVector = Icons.Filled.Person, contentDescription = "Perfil", modifier = Modifier.size(32.dp))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(

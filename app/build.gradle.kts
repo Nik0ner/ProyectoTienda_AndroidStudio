@@ -77,6 +77,7 @@ dependencies {
 
 // Dependencia de Firebase Firestore (usa BoM para la versión)
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
 // Dependencia para usar .await() en las tareas de Firebase (corutinas)
 // Usamos una versión específica y eliminamos la duplicada.
