@@ -10,7 +10,7 @@ data class Producto(
     var nombre: String = "",
     var descripcion: String = "",
     var precio: Double = 0.0,
-    var imagenUrl: String = ""
+    val imagenUrl: String? = null
 
 ) {
     constructor() : this("", "", "", 0.0,"")

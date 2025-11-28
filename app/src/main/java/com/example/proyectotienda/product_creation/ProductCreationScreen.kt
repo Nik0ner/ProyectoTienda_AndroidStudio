@@ -25,35 +25,59 @@ import com.example.proyectotienda.product_creation.viewmodel.ProductCreationView
 import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.R
 import com.example.proyectotienda.product_creation.viewmodel.ProductCreationUiState
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.asImageBitmap
+import android.graphics.BitmapFactory
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+
+// 🚨 NUEVAS IMPORTACIONES REQUERIDAS PARA PERMISOS
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+// --------------------------------------------------
 
 import java.io.File
 import androidx.core.content.FileProvider
 import android.content.Context
 import java.io.InputStream
-// ------------------------------------------
+import java.io.OutputStream
 
-// 📸 FUNCIÓN AUXILIAR PARA CREAR URI TEMPORAL DE LA CÁMARA
-fun createTempImageUri(context: Context): Uri {
+// ----------------------------------------------------------------------
+// 📸 FUNCIONES AUXILIARES (Fuera del Composable para evitar recomposiciones)
+// ----------------------------------------------------------------------
+
+/**
+ * Crea una URI de destino estable para que la cámara guarde la imagen.
+ * Utiliza FileProvider para garantizar que la cámara tenga permisos de escritura.
+ * @param context Contexto de la aplicación.
+ * @return URI de FileProvider para la imagen temporal.
+ */
+fun createCameraTempUri(context: Context): Uri {
     val tempFile = File.createTempFile(
         "temp_image",
         ".jpg",
-        context.cacheDir
+        context.filesDir // USAR filesDir (más estable que cacheDir)
     ).apply {
         createNewFile()
     }
     return FileProvider.getUriForFile(
         context,
-        "com.example.proyectotienda.fileprovider",
+        "com.example.proyectotienda.fileprovider", // ¡DEBE COINCIDIR EXACTAMENTE!
         tempFile
     )
 }
 
-// 💾 FUNCIÓN AUXILIAR PARA COPIAR URI A ARCHIVO ESTABLE
+/**
+ * Copia la URI temporal de la Galería a un archivo interno estable (usando FileProvider).
+ * Esto es necesario para asegurar que la URI sea accesible y persista.
+ * @param context Contexto de la aplicación.
+ * @param uri La URI de contenido (content://) obtenida de la galería.
+ * @return URI de FileProvider del archivo copiado, o null si falla.
+ */
 fun copyUriToTempFile(context: Context, uri: Uri): Uri? {
     try {
         val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-        val tempFile = File(context.cacheDir, "upload_temp_${System.currentTimeMillis()}.jpg")
+        val tempFile = File(context.filesDir, "upload_temp_${System.currentTimeMillis()}.jpg") // USAR filesDir
 
         inputStream?.use { input ->
             tempFile.outputStream().use { output ->
@@ -61,14 +85,22 @@ fun copyUriToTempFile(context: Context, uri: Uri): Uri? {
             }
         }
 
-        // Devuelve la URI estable del nuevo archivo
-        return Uri.fromFile(tempFile)
+        return FileProvider.getUriForFile(
+            context,
+            "com.example.proyectotienda.fileprovider", // ¡DEBE COINCIDIR EXACTAMENTE!
+            tempFile
+        )
+
     } catch (e: Exception) {
         e.printStackTrace()
         return null
     }
 }
 
+
+// ----------------------------------------------------------------------
+// 💻 PANTALLA PRINCIPAL
+// ----------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,71 +110,127 @@ fun ProductCreationScreen(
 ) {
     val estado by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() } // Para errores
 
-    // Configuramos colores de la barra superior
     val appBarcolor = MaterialTheme.colorScheme.primary
     val appBarContent = MaterialTheme.colorScheme.onPrimary
 
-    // --- 💥 1. ESTADO TEMPORAL PARA LA CÁMARA 💥 ---
-    var tempImageUri by remember { mutableStateOf<Uri?>(null) }
+    // --- 1. ESTADO TEMPORAL PARA LA CÁMARA ---
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
 
-    // LANZADOR PARA GALERÍA (MODIFICADO: Copia la URI a un archivo estable)
+    // LANZADOR PARA GALERÍA
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
+            viewModel.setShowSourceDialog(false)
             if (uri != null) {
-                // 💥 COPIA EL ARCHIVO Y PASA LA URI ESTABLE
+                // 🚨 PUNTO CRÍTICO 1: Llama a copyUriToTempFile para obtener una URI estable (FileProvider)
                 val stableUri = copyUriToTempFile(context, uri)
-                viewModel.onImageSelected(stableUri)
+
+                // 🚨 PUNTO CRÍTICO 2: Solo si la copia fue exitosa, pasamos la URI estable al ViewModel
+                if (stableUri != null) {
+                    viewModel.onImageSelected(stableUri)
+                } else {
+                    viewModel.setError("Error al copiar la imagen de la galería internamente.")
+                    viewModel.onImageSelected(null)
+                }
+            } else {
+                viewModel.onImageSelected(null)
             }
         }
     )
 
-    // LANZADOR PARA CÁMARA (MODIFICADO: Copia la URI a un archivo estable)
+    // LANZADOR PARA CÁMARA
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
-            if (success && tempImageUri != null) {
-                // 💥 COPIA EL ARCHIVO Y PASA LA URI ESTABLE
-                val stableUri = copyUriToTempFile(context, tempImageUri!!)
-                viewModel.onImageSelected(stableUri) // Envía la URI estable al ViewModel
+            viewModel.setShowSourceDialog(false)
+            if (success && tempCameraUri != null) {
+                // 🚨 CRÍTICO: Aquí se usa la URI de FileProvider creada antes.
+                viewModel.onImageSelected(tempCameraUri)
             } else {
-                viewModel.setShowSourceDialog(false)
+                viewModel.onImageSelected(null)
             }
+            tempCameraUri = null // Limpiar la URI temporal después de usarla
         }
     )
 
-    // --- LÓGICA DE NAVEGACIÓN ---
+    // ----------------------------------------------------
+    // 🚨 NUEVO CÓDIGO: LANZADOR DE PERMISOS DE CÁMARA
+    // ----------------------------------------------------
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted: Boolean ->
+            if (isGranted) {
+                // Permiso concedido, lanzar la cámara
+                val uri = createCameraTempUri(context)
+                tempCameraUri = uri
+                cameraLauncher.launch(uri)
+            } else {
+                // Permiso denegado
+                viewModel.setError("Permiso de cámara denegado. No se puede tomar la foto.")
+            }
+            viewModel.setShowSourceDialog(false)
+        }
+    )
+    // ----------------------------------------------------
+
+
+    // --- LÓGICA DE NAVEGACIÓN Y ERRORES ---
 
     LaunchedEffect(estado.creacionExitosa) {
         if (estado.creacionExitosa) {
+            // Navegación exitosa
             navController.navigate(Screens.HomeScreen.route) {
+                // Esto limpia la pila de navegación hasta Login y va a Home (asumiendo que Login es el inicio)
                 popUpTo(Screens.Login.route) { inclusive = true }
             }
             viewModel.resetCreacionExitosa()
         }
     }
 
-    // --- 2. CONTROL DEL DIÁLOGO ---
+    // Muestra SnackBar si hay error
+    LaunchedEffect(estado.errorMessage) {
+        estado.errorMessage?.let { msg ->
+            snackbarHostState.showSnackbar(
+                message = msg,
+                actionLabel = "OK",
+                duration = SnackbarDuration.Short
+            )
+            viewModel.clearError()
+        }
+    }
+
+    // --- 2. DIÁLOGO DE SELECCIÓN Y LÓGICA DE PERMISOS ---
 
     if (estado.showSourceDialog) {
         ImageSourceDialog(
             onDismiss = { viewModel.setShowSourceDialog(false) },
             onGalleryClick = {
-                viewModel.setShowSourceDialog(false)
+                // La Galería no requiere permisos runtime a partir de Android 13 para GetContent
                 galleryLauncher.launch("image/*")
             },
             onCameraClick = {
-                val uri = createTempImageUri(context)
-                tempImageUri = uri
-                viewModel.setShowSourceDialog(false)
-                cameraLauncher.launch(uri)
+                // 🚨 Lógica de verificación de permisos de cámara
+                when (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)) {
+                    PackageManager.PERMISSION_GRANTED -> {
+                        // Permiso concedido, lanzar la cámara directamente
+                        val uri = createCameraTempUri(context)
+                        tempCameraUri = uri
+                        cameraLauncher.launch(uri)
+                    }
+                    else -> {
+                        // Solicitar permiso runtime
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                }
             }
         )
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }, // Agregamos SnackBar Host
         topBar = {
             CenterAlignedTopAppBar(
                 modifier = Modifier.height(110.dp),
@@ -174,11 +262,9 @@ fun ProductCreationScreen(
         ProductCreationContent(
             modifier = Modifier
                 .padding(paddingValues)
-                .fillMaxSize()
-                .background(Color.DarkGray),
+                .fillMaxSize(),
             estado = estado,
-            viewModel = viewModel,
-            navController = navController
+            viewModel = viewModel
         )
     }
 }
@@ -219,9 +305,27 @@ fun ImageSourceDialog(
 fun ProductCreationContent(
     modifier: Modifier = Modifier,
     estado: ProductCreationUiState,
-    viewModel: ProductCreationViewModel,
-    navController: NavController
+    viewModel: ProductCreationViewModel
 ) {
+    val context = LocalContext.current
+
+    // Lógica de carga de Bitmap para Preview
+    val previewBitmap: ImageBitmap? = remember(estado.imagenUri) {
+        if (estado.imagenUri == null) {
+            return@remember null
+        }
+        try {
+            val inputStream = context.contentResolver.openInputStream(estado.imagenUri)
+            inputStream?.use { input ->
+                BitmapFactory.decodeStream(input)?.asImageBitmap()
+            }
+        } catch (e: Exception) {
+            // Nota: Aquí el error puede ser solo un problema de preview, la URI sigue siendo válida
+            // Si el problema es la URI en sí, se manejaría mejor en la lógica de selección/copia.
+            null
+        }
+    }
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -245,7 +349,7 @@ fun ProductCreationContent(
                 Text("Ingreso de Producto", style = MaterialTheme.typography.headlineSmall)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 1. Campo Nombre
+                // Campos Nombre, Descripción, Precio
                 OutlinedTextField(
                     value = estado.nombre,
                     onValueChange = { viewModel.onNombreChange(it) },
@@ -257,10 +361,8 @@ fun ProductCreationContent(
                 if (estado.errorNombre) {
                     Text("El nombre no puede estar vacío.", color = MaterialTheme.colorScheme.error)
                 }
-
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 2. Campo Descripción
                 OutlinedTextField(
                     value = estado.descripcion,
                     onValueChange = { viewModel.onDescripcionChange(it) },
@@ -268,10 +370,8 @@ fun ProductCreationContent(
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                 )
-
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 3. Campo Precio
                 OutlinedTextField(
                     value = estado.precio,
                     onValueChange = { viewModel.onPrecioChange(it) },
@@ -285,39 +385,53 @@ fun ProductCreationContent(
                     Text("Ingrese un precio válido (número mayor a 0).", color = MaterialTheme.colorScheme.error)
                 }
 
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // 💥 BOTÓN PARA SUBIR IMAGEN 💥
                 Button(
-                    onClick = { viewModel.setShowSourceDialog(true) },
+                    onClick = {
+                        if (!estado.isLoading) viewModel.setShowSourceDialog(true)
+                    },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    enabled = !estado.isLoading, // Deshabilitar si está cargando
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("SUBIR IMAGEN")
                 }
 
-                // 💡 PREVIEW DE IMAGEN/CONFIRMACIÓN DE URI
-                if (estado.imagenUri != null) {
-                    val uri = estado.imagenUri
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Imagen seleccionada: OK (URI: ${uri.toString().take(30)}...)",
-                        color = Color.Green,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                // 💡 PREVIEW DE IMAGEN
+                if (previewBitmap != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Image(
+                        bitmap = previewBitmap,
+                        contentDescription = "Preview del producto",
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .background(Color.LightGray),
+                        contentScale = ContentScale.Crop
                     )
+                } else if (estado.imagenUri != null) {
+                    // Muestra el mensaje de error si la URI existe pero la carga falló
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("❌ Error al cargar preview de imagen.", color = Color.Red)
                 }
+
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // 4. Botón de Guardar (CREATE)
                 Button(
                     onClick = { viewModel.onGuardarProductoClick() },
-                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    enabled = !estado.isLoading // Deshabilitar si está cargando
                 ) {
-                    Text("GUARDAR PRODUCTO")
+                    if (estado.isLoading) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("GUARDAR PRODUCTO")
+                    }
                 }
             }
         }
