@@ -9,7 +9,6 @@ import androidx.navigation.navArgument
 import com.example.proyectotienda.form.FormScreen
 import com.example.proyectotienda.home.HomeScreen
 import com.example.proyectotienda.login.LoginScreen
-import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product_creation.ProductCreationScreen
 import com.example.proyectotienda.product_update.ProductUpdateScreen
 
