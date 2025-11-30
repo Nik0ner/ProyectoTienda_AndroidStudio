@@ -11,6 +11,7 @@ import com.example.proyectotienda.home.HomeScreen
 import com.example.proyectotienda.login.LoginScreen
 import com.example.proyectotienda.product_creation.ProductCreationScreen
 import com.example.proyectotienda.product_update.ProductUpdateScreen
+import com.example.proyectotienda.recover.RecoverPasswordScreen
 
 
 @Composable
@@ -36,6 +37,10 @@ fun AppNavigation() {
 
         composable(route = Screens.ProductCreation.route) {
             ProductCreationScreen(navController)
+        }
+
+        composable(Screens.RecoverPassword.route) {
+            RecoverPasswordScreen(navController)
         }
 
         composable(

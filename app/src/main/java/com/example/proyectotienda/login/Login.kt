@@ -236,7 +236,7 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                TextButton(onClick = { /* TODO: Recuperar contraseña */ }) {
+                TextButton(onClick = { navController.navigate(Screens.RecoverPassword.route)}) {
                     Text(
                         "¿Olvidaste tu contraseña?",
                         color = Color.Black

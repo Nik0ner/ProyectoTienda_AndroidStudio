@@ -2,6 +2,7 @@ package com.example.proyectotienda.form
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
@@ -9,33 +10,37 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-// ⬇️ IMPORTS CLAVE PARA MVVM
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.proyectotienda.form.viewmodel.FormViewModel
+
 import com.example.proyectotienda.R
 import com.example.proyectotienda.navigation.Screens
+import com.example.proyectotienda.form.viewmodel.FormViewModel
+import com.example.proyectotienda.form.viewmodel.PositiveApiViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormScreen(
     navController: NavController,
-    viewModel: FormViewModel = viewModel() // 1. Inyectamos el ViewModel aquí
+    viewModel: FormViewModel = viewModel()
 ) {
-    // 2. Observamos el Estado (La fuente de verdad única)
+    val positiveVm: PositiveApiViewModel = viewModel()
+    val frasePositiva by positiveVm.phrase.collectAsState()
     val state by viewModel.state.collectAsState()
 
-    val appBarcolor = MaterialTheme.colorScheme.primary
-    val appBarContent = MaterialTheme.colorScheme.onPrimary
+    val YellowMain = Color(0xFFFFFF33)
+    val YellowStrong = Color(0xFFFFFF33)
+    val DarkCard = Color(0xFF1A1A1A)
 
-    // 3. Efecto de Navegación: Si el ViewModel dice "Éxito", navegamos.
+    // Navegación tras registro completo
     LaunchedEffect(state.isRegistroExitoso) {
         if (state.isRegistroExitoso) {
             navController.navigate(Screens.HomeScreen.route) {
-                // Opcional: Evita volver al registro con el botón atrás
                 popUpTo(Screens.Login.route) { inclusive = false }
             }
             viewModel.resetRegistroExitoso()
@@ -50,96 +55,159 @@ fun FormScreen(
                     Image(
                         painter = painterResource(id = R.drawable.trafalgar),
                         contentDescription = "Logo",
-                        modifier = Modifier.height(240.dp).fillMaxWidth(0.5f)
+                        modifier = Modifier
+                            .height(240.dp)
+                            .fillMaxWidth(0.5f)
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }, modifier = Modifier.fillMaxHeight()) {
-                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Volver", modifier = Modifier.size(32.dp))
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver", tint = Color.Black, modifier = Modifier.size(32.dp))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { navController.navigate(Screens.Login.route) }, modifier = Modifier.fillMaxHeight()) {
-                        Icon(imageVector = Icons.Filled.Person, contentDescription = "Perfil", modifier = Modifier.size(32.dp))
+                    IconButton(onClick = { navController.navigate(Screens.Login.route) }) {
+                        Icon(Icons.Filled.Person, contentDescription = "Perfil", tint = Color.Black, modifier = Modifier.size(32.dp))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = appBarcolor,
-                    actionIconContentColor = appBarContent,
-                    navigationIconContentColor = appBarContent,
-                    titleContentColor = appBarContent
+                    containerColor = YellowMain
                 )
             )
         }
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(22.dp)
                 .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ---------------- USUARIO ----------------
-            OutlinedTextField(
-                value = state.usuario, // LEEMOS del estado
-                onValueChange = { viewModel.onUsuarioChange(it) }, // AVISAMOS al ViewModel
-                label = { Text("Usuario") },
-                isError = state.usuarioError, // LEEMOS el error
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (state.usuarioError) {
-                Text(
-                    text = "El usuario es obligatorio",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // ---------------- CONTRASEÑA ----------------
-            OutlinedTextField(
-                value = state.pass,
-                onValueChange = { viewModel.onPasswordChange(it) },
-                label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                isError = state.passError,
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (state.passError) {
-                Text(
-                    text = state.passErrorMsg, // Mensaje dinámico desde el ViewModel
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ---------------- CORREO ----------------
-            OutlinedTextField(
-                value = state.correo,
-                onValueChange = { viewModel.onEmailChange(it) },
-                label = { Text("Correo") },
-                isError = state.correoError,
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (state.correoError) {
-                Text(
-                    text = state.correoErrorMsg,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ---------------- BOTÓN ----------------
-            Button(
-                // Toda la lógica compleja se fue al ViewModel. ¡Qué limpieza!
-                onClick = { viewModel.onRegistrarClick() },
-                modifier = Modifier.fillMaxWidth()
+            // ---------- FRASE POSITIVA ----------
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkCard),
+                shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
-                Text("Registrarse")
+                Text(
+                    text = frasePositiva,
+                    modifier = Modifier.padding(16.dp),
+                    color = YellowMain,
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
+
+            // ---------- CARD DEL FORMULARIO ----------
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF111111)),
+                shape = RoundedCornerShape(22.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    // USUARIO
+                    StyledInput(
+                        value = state.usuario,
+                        onChange = { viewModel.onUsuarioChange(it) },
+                        label = "Usuario",
+                        isError = state.usuarioError,
+                        errorMessage = "El usuario es obligatorio",
+                        YellowMain = YellowMain
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // PASSWORD
+                    StyledInput(
+                        value = state.pass,
+                        onChange = { viewModel.onPasswordChange(it) },
+                        label = "Contraseña",
+                        isError = state.passError,
+                        errorMessage = state.passErrorMsg,
+                        YellowMain = YellowMain,
+                        isPassword = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // CORREO
+                    StyledInput(
+                        value = state.correo,
+                        onChange = { viewModel.onEmailChange(it) },
+                        label = "Correo",
+                        isError = state.correoError,
+                        errorMessage = state.correoErrorMsg,
+                        YellowMain = YellowMain
+                    )
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // BOTÓN
+                    Button(
+                        onClick = { viewModel.onRegistrarClick() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(55.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = YellowStrong)
+                    ) {
+                        Text("Registrarse", color = Color.Black)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StyledInput(
+    value: String,
+    onChange: (String) -> Unit,
+    label: String,
+    isError: Boolean,
+    errorMessage: String,
+    YellowMain: Color,
+    isPassword: Boolean = false
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+
+        OutlinedTextField(
+            value = value,
+            onValueChange = onChange,
+            label = { Text(label, color = YellowMain) },
+            textStyle = LocalTextStyle.current.copy(color = Color.White),
+            visualTransformation =
+                if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+            isError = isError,
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = YellowMain,
+                unfocusedBorderColor = Color.Gray,
+                focusedLabelColor = YellowMain,
+                cursorColor = YellowMain,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            )
+        )
+
+        if (isError) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
