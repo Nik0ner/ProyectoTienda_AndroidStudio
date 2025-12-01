@@ -8,10 +8,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,25 +22,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyectotienda.R
+import com.example.proyectotienda.cart.CartViewModel
+import com.example.proyectotienda.cart.viewmodel.CartModal
 import com.example.proyectotienda.home.viewmodel.HomeViewModel
 import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product.Producto
-import com.example.proyectotienda.R
-import androidx.compose.material3.MaterialTheme
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: HomeViewModel = viewModel() // Inyección del ViewModel
+    viewModel: HomeViewModel = viewModel(),
+    // Instancia compartida
+    cartViewModel: CartViewModel
 ) {
     val appBarcolor = MaterialTheme.colorScheme.primary
     val appBarContent = MaterialTheme.colorScheme.onPrimary
+    var showCart by remember { mutableStateOf(false) }
+
+    // 💡 Paso 1: Observar el conteo total de ítems desde el ViewModel
+    val cartItemCount by cartViewModel.itemCount.collectAsState()
 
     Scaffold(
         topBar = {
-            // BARRA SUPERIOR (TopAppBar)
             CenterAlignedTopAppBar(
                 modifier = Modifier.height(110.dp),
                 title = {
@@ -56,15 +59,37 @@ fun HomeScreen(
                     )
                 },
                 navigationIcon = {
-                    // Botón para crear nuevo producto
-                    IconButton(onClick = { navController.navigate(route = Screens.ProductCreation.route)}, modifier = Modifier.fillMaxHeight()) {
-                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Crear Producto", modifier = Modifier.size(32.dp))
+                    IconButton(
+                        onClick = { navController.navigate(Screens.ProductCreation.route) }
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = "Crear Producto")
                     }
                 },
                 actions = {
-                    // Botón de Perfil/Login
-                    IconButton(onClick = { navController.navigate(Screens.Login.route)}, modifier = Modifier.fillMaxHeight()) {
-                        Icon(imageVector = Icons.Filled.Person, contentDescription = "Perfil", modifier = Modifier.size(32.dp))
+                    // 💡 Paso 2: Implementar BadgedBox para mostrar el contador
+                    BadgedBox(
+                        badge = {
+                            if (cartItemCount > 0) {
+                                Badge {
+                                    Text(
+                                        text = cartItemCount.toString(),
+                                        // Ajuste menor para que se vea bien si el número es grande
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        IconButton(onClick = { navController.navigate(Screens.Cart.route) }) {
+                            Icon(Icons.Filled.ShoppingCart, contentDescription = "Carrito")
+                        }
+                    }
+                    // Fin del BadgedBox
+
+                    IconButton(onClick = { navController.navigate(Screens.Login.route) }) {
+                        Icon(Icons.Filled.Person, contentDescription = "Perfil")
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -76,42 +101,50 @@ fun HomeScreen(
             )
         }
     ) { paddingValues ->
-        // Contenido principal de la pantalla
+
+        if (showCart) {
+            CartModal(
+                cartViewModel = cartViewModel,
+                onClose = { showCart = false },
+                onCheckout = { showCart = false }
+            )
+        }
+
         HomeBodyContent(
-            Modifier.padding(paddingValues),
+            modifier = Modifier.padding(paddingValues),
             navController = navController,
-            viewModel = viewModel
+            viewModel = viewModel,
+            cartViewModel = cartViewModel
         )
     }
 }
+
+
+// --- HomeBodyContent y ProductCard siguen siendo funcionales ---
 
 @Composable
 fun HomeBodyContent(
     modifier: Modifier = Modifier,
     navController: NavController,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    cartViewModel: CartViewModel // Recibe la instancia compartida
 ) {
-    val state by viewModel.state.collectAsState() // Obtiene el estado del ViewModel
+    val state by viewModel.state.collectAsState()
 
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         when {
-            // Indicador de Carga
-            state.isLoading -> {
+            state.isLoading ->
                 CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 64.dp)
+                    modifier = Modifier.padding(top = 64.dp)
                 )
-            }
-            // Mensaje de Error
-            state.errorMessage != null -> {
+
+            state.errorMessage != null ->
                 Text("Error al cargar productos: ${state.errorMessage}", color = Color.Red)
-            }
-            // Grid de Productos
-            else -> {
+
+            else ->
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(10.dp),
@@ -121,45 +154,42 @@ fun HomeBodyContent(
                 ) {
                     items(state.productos) { producto ->
                         ProductCard(
+                            onComprarClick = { cartViewModel.addToCart(it) },
                             producto = producto,
-                            navController = navController,
-                            onComprarClick = { viewModel.onComprarClick(producto.id) },
-                            onDeleteClick = {viewModel.onDeleteClick(producto.id) }
+                            onDeleteClick = { viewModel.onDeleteClick(producto.id) },
+                            onEditClick = {
+                                navController.navigate(Screens.ProductUpdate.withId(producto.id))
+                            }
                         )
                     }
                 }
-            }
         }
     }
 }
 
+
 @Composable
 fun ProductCard(
     producto: Producto,
-    navController: NavController,
-    onComprarClick: (String) -> Unit,
-    onDeleteClick: (String) -> Unit,
+    onComprarClick: (Producto) -> Unit,
+    onDeleteClick: () -> Unit,
+    onEditClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Tarjeta individual de cada producto
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
             .height(280.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalAlignment = Alignment.Start
+                    .padding(bottom = 8.dp)
             ) {
-                // Imagen
                 Image(
-                    painter = painterResource(id = com.example.proyectotienda.R.drawable.retro),
+                    painter = painterResource(id = R.drawable.retro),
                     contentDescription = producto.nombre,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -167,8 +197,7 @@ fun ProductCard(
                     contentScale = ContentScale.Crop
                 )
 
-                // Nombre, Descripción y Precio
-                Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                Column(Modifier.padding(horizontal = 8.dp)) {
                     Text(
                         text = producto.nombre,
                         fontWeight = FontWeight.Bold,
@@ -184,7 +213,8 @@ fun ProductCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+
+                Spacer(Modifier.height(8.dp))
 
                 Text(
                     text = "$${"%.2f".format(producto.precio)}",
@@ -192,73 +222,56 @@ fun ProductCard(
                     fontSize = 16.sp,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
 
-                // Fila de acciones (Comprar y Eliminar)
+                Spacer(Modifier.height(12.dp))
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Botón Comprar
+
                     Button(
-                        onClick = { onComprarClick(producto.id) },
+                        onClick = {onComprarClick(producto)},
                         modifier = Modifier
                             .weight(1f)
                             .height(40.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Comprar", fontWeight = FontWeight.SemiBold)
+                        Text("Añadir", fontWeight = FontWeight.SemiBold)
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(Modifier.width(8.dp))
 
-                    // Ícono de Eliminar
                     Surface(
-                        onClick = { onDeleteClick(producto.id) },
-                        modifier = Modifier
-                            .size(40.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(40.dp),
                         color = MaterialTheme.colorScheme.error,
-                        shadowElevation = 4.dp
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = "Eliminar Producto",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
+                                Icons.Filled.Delete,
+                                contentDescription = "Eliminar",
+                                tint = Color.White
                             )
                         }
                     }
                 }
             }
 
-            // Ícono de Editar (Superpuesto en la esquina superior derecha)
             Surface(
-                onClick = {
-                    navController.navigate(Screens.ProductUpdate.withId(producto.id))
-                },
+                onClick = onEditClick,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
                     .size(32.dp),
                 shape = CircleShape,
-                color = Color.White.copy(alpha = 0.8f),
-                shadowElevation = 4.dp
+                color = Color.White.copy(alpha = 0.85f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Filled.Edit,
-                        contentDescription = "Editar Producto",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Icon(Icons.Filled.Edit, contentDescription = "Editar")
                 }
             }
         }
