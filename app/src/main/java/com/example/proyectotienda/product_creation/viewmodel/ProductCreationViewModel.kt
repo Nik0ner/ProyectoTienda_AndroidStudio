@@ -13,25 +13,26 @@ import android.util.Log
 
 class ProductCreationViewModel : ViewModel() {
 
-    // Asumimos que ProductoRepository es un Singleton o un Object
-    private val repository = ProductoRepository
+    private val repository = ProductoRepository // Acceso a la capa de datos
 
     private val _state = MutableStateFlow(ProductCreationUiState())
-    val state = _state.asStateFlow()
+    val state = _state.asStateFlow() // Estado observable por la UI
 
     // ---------------------------
     // MANEJO INPUTS
     // ---------------------------
+    // Actualiza el nombre y limpia error
     fun onNombreChange(newNombre: String) {
         _state.update { it.copy(nombre = newNombre, errorNombre = false) }
     }
 
+    // Actualiza la descripción
     fun onDescripcionChange(newDescripcion: String) {
         _state.update { it.copy(descripcion = newDescripcion) }
     }
 
+    // Actualiza el precio, filtrando solo números/decimales
     fun onPrecioChange(newPrecio: String) {
-        // Permite solo números (decimales opcionales)
         val filteredPrecio = newPrecio.replace(Regex("[^0-9.]"), "")
         _state.update { it.copy(precio = filteredPrecio, errorPrecio = false) }
     }
@@ -39,6 +40,7 @@ class ProductCreationViewModel : ViewModel() {
     // ---------------------------
     // IMAGEN (opcional)
     // ---------------------------
+    // Establece la URI de la imagen seleccionada
     fun onImageSelected(uri: Uri?) {
         _state.update {
             it.copy(
@@ -48,28 +50,31 @@ class ProductCreationViewModel : ViewModel() {
         }
     }
 
+    // Controla la visibilidad del diálogo de selección de fuente de imagen
     fun setShowSourceDialog(show: Boolean) {
         _state.update { it.copy(showSourceDialog = show) }
     }
 
+    // Limpia el mensaje de error general
     fun clearError() {
         _state.update { it.copy(errorMessage = null) }
     }
 
+    // Establece un mensaje de error general
     fun setError(message: String) {
         _state.update { it.copy(errorMessage = message, isLoading = false) }
     }
 
     // ---------------------------
-    // GUARDAR PRODUCTO SIN STORAGE (Lógica Principal)
+    // GUARDAR PRODUCTO EN FIRESTORE
     // ---------------------------
     fun onGuardarProductoClick() {
         val s = _state.value
 
-        // Intenta parsear el precio, si falla será null
+        // Intenta convertir el precio a Double para validación
         val precioParseado = s.precio.toDoubleOrNull()
 
-        // Validación
+        // Validación local de campos
         val nombreValido = s.nombre.isNotBlank()
         val precioValido = precioParseado != null && precioParseado > 0
 
@@ -78,35 +83,31 @@ class ProductCreationViewModel : ViewModel() {
                 it.copy(
                     errorNombre = !nombreValido,
                     errorPrecio = !precioValido,
-                    errorMessage = null // Limpia cualquier error previo si falla la validación local
+                    errorMessage = null
                 )
             }
-            // Sale si la validación falla
-            return
+            return // Detiene la ejecución si falla la validación
         }
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
-                // El precio ya se validó como no nulo y > 0
                 val precioFinal = precioParseado!!
 
-                // ------------------------
-                // CREACIÓN DEL PRODUCTO
-                // ------------------------
+                // Construcción del objeto Producto (sin URL de Storage)
                 val producto = Producto(
-                    id = "", // Firebase/Firestore asignará el ID
+                    id = "", // Firestore asignará el ID
                     nombre = s.nombre,
                     descripcion = s.descripcion,
                     precio = precioFinal,
-                    imagenUrl = null // 🔥 SIN STORAGE → siempre null
+                    imagenUrl = null // No se utiliza Storage
                 )
 
                 // Llama al repositorio para guardar en Firestore
                 repository.addProducto(producto)
 
-                // Éxito: reinicia el estado y marca como exitoso
+                // Éxito: reinicia los campos y marca la creación como exitosa
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -119,7 +120,7 @@ class ProductCreationViewModel : ViewModel() {
                 }
 
             } catch (e: Exception) {
-                // Manejo de error de base de datos o cualquier excepción
+                // Manejo de error de base de datos
                 Log.e("PRODUCT_VM", "Error guardando producto: ${e.message}", e)
 
                 _state.update {

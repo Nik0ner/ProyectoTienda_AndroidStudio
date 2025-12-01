@@ -11,7 +11,6 @@ data class ProductCreationUiState(
     val errorNombre: Boolean = false,
     val errorPrecio: Boolean = false,
     val creacionExitosa: Boolean = false,
-    // 💡 Campos para manejo de carga y errores
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )

@@ -10,29 +10,28 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProductUpdateViewModel(
-    // ⬅️ 1. Recibe el ID del producto a modificar desde la navegación
+    // ID del producto a modificar (inyectado)
     private val productId: String
 ) : ViewModel() {
 
-    private val repository = ProductoRepository // Usamos el Singleton
+    private val repository = ProductoRepository // Repositorio de datos
     private val _state = MutableStateFlow(ProductUpdateUiState())
-    val state = _state.asStateFlow()
+    val state = _state.asStateFlow() // Estado observable por la UI
 
     init {
-        // LÓGICA CLAVE: CARGAR EL PRODUCTO EXISTENTE
+        // Lógica de carga inicial: buscar el producto por ID
         viewModelScope.launch {
             _state.update { it.copy(cargando = true) }
 
-            // Busca el producto en el Repositorio
             val producto = repository.getProductoById(productId)
 
             producto?.let { p ->
-                // ⬅️ Rellenar el estado con los datos actuales del producto
+                // Rellena el estado con los datos del producto existente
                 _state.update {
                     it.copy(
                         nombre = p.nombre,
                         descripcion = p.descripcion,
-                        precio = p.precio.toString(), // Convertir Double a String para el TextField
+                        precio = p.precio.toString(),
                         cargando = false
                     )
                 }
@@ -42,33 +41,30 @@ class ProductUpdateViewModel(
         }
     }
 
-    // ------------------------------------
-    // 2. MANEJADORES DE INPUT (Actualizan el estado con cada tecla)
-    // ------------------------------------
 
+    // 2. MANEJADORES DE INPUT
+    // Actualiza el nombre en el estado
     fun onNombreChange(newNombre: String) {
         _state.update { it.copy(nombre = newNombre, errorNombre = false) }
     }
 
+    // Actualiza la descripción en el estado
     fun onDescripcionChange(newDescripcion: String) {
         _state.update { it.copy(descripcion = newDescripcion) }
     }
 
+    // Actualiza el precio, permitiendo solo formato numérico
     fun onPrecioChange(newPrecio: String) {
-        // Opcional: solo permitir entrada de números y puntos
         if (newPrecio.isEmpty() || newPrecio.matches(Regex("^\\d*\\.?\\d*\$"))) {
             _state.update { it.copy(precio = newPrecio, errorPrecio = false) }
         }
     }
 
-    // ------------------------------------
     // 3. LÓGICA PRINCIPAL: GUARDAR CAMBIOS (UPDATE)
-    // ------------------------------------
-
     fun onGuardarCambiosClick() {
         val s = _state.value
 
-        // Validación
+        // Validación de datos
         val precioParseado = s.precio.toDoubleOrNull()
         val nombreValido = s.nombre.isNotBlank()
         val precioValido = precioParseado != null && precioParseado > 0
@@ -83,26 +79,23 @@ class ProductUpdateViewModel(
             return
         }
 
-        // Construir el objeto Producto Actualizado
+        // Construye el objeto Producto con los nuevos datos, manteniendo el ID
         val productoActualizado = Producto(
-            id = productId, // ⬅️ ¡CRÍTICO! Mantenemos el ID original
+            id = productId,
             nombre = s.nombre,
             descripcion = s.descripcion,
             precio = precioParseado!!
         )
 
-        // Llamar a la función de Actualización del Repositorio
+        // Llama al repositorio para actualizar el producto
         viewModelScope.launch {
             repository.updateProducto(productoActualizado)
 
-            // Notificar a la Vista para volver al Home
+            // Notifica la actualización exitosa a la UI
             _state.update { it.copy(actualizacionExitosa = true) }
         }
     }
 
-    /**
-     * Llamado por la Vista DESPUÉS de navegar, para resetear la bandera.
-     */
     fun resetActualizacionExitosa() {
         _state.update { it.copy(actualizacionExitosa = false) }
     }

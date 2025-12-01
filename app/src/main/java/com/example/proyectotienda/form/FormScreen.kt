@@ -37,7 +37,7 @@ fun FormScreen(
     val YellowStrong = Color(0xFFFFFF33)
     val DarkCard = Color(0xFF1A1A1A)
 
-    // Navegación tras registro completo
+    // Lógica de navegación tras registro exitoso
     LaunchedEffect(state.isRegistroExitoso) {
         if (state.isRegistroExitoso) {
             navController.navigate(Screens.HomeScreen.route) {
@@ -49,6 +49,7 @@ fun FormScreen(
 
     Scaffold(
         topBar = {
+            // BARRA SUPERIOR (TopAppBar)
             CenterAlignedTopAppBar(
                 modifier = Modifier.height(110.dp),
                 title = {
@@ -85,7 +86,7 @@ fun FormScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // ---------- FRASE POSITIVA ----------
+            // CARD: FRASE POSITIVA
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -102,7 +103,7 @@ fun FormScreen(
                 )
             }
 
-            // ---------- CARD DEL FORMULARIO ----------
+            // CARD: FORMULARIO DE REGISTRO
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF111111)),
@@ -117,7 +118,7 @@ fun FormScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    // USUARIO
+                    // CAMPO: USUARIO
                     StyledInput(
                         value = state.usuario,
                         onChange = { viewModel.onUsuarioChange(it) },
@@ -129,7 +130,7 @@ fun FormScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // PASSWORD
+                    // CAMPO: CONTRASEÑA
                     StyledInput(
                         value = state.pass,
                         onChange = { viewModel.onPasswordChange(it) },
@@ -142,7 +143,7 @@ fun FormScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // CORREO
+                    // CAMPO: CORREO
                     StyledInput(
                         value = state.correo,
                         onChange = { viewModel.onEmailChange(it) },
@@ -154,7 +155,7 @@ fun FormScreen(
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    // BOTÓN
+                    // BOTÓN: REGISTRARSE
                     Button(
                         onClick = { viewModel.onRegistrarClick() },
                         modifier = Modifier
@@ -171,6 +172,7 @@ fun FormScreen(
     }
 }
 
+// Función Composable para el estilo del Input (TextField)
 @Composable
 fun StyledInput(
     value: String,

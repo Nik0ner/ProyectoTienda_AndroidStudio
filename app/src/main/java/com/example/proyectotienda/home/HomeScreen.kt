@@ -21,7 +21,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-// import androidx.compose.ui.tooling.preview.Preview // ⬅️ Borrado (innecesario aquí)
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -37,14 +36,14 @@ import androidx.compose.material3.MaterialTheme
 @Composable
 fun HomeScreen(
     navController: NavController,
-    // 1. INYECTAMOS EL VIEWMODEL
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel() // Inyección del ViewModel
 ) {
     val appBarcolor = MaterialTheme.colorScheme.primary
     val appBarContent = MaterialTheme.colorScheme.onPrimary
 
     Scaffold(
         topBar = {
+            // BARRA SUPERIOR (TopAppBar)
             CenterAlignedTopAppBar(
                 modifier = Modifier.height(110.dp),
                 title = {
@@ -52,16 +51,18 @@ fun HomeScreen(
                         painter = painterResource(id = R.drawable.trafalgar),
                         contentDescription = "Logo",
                         modifier = Modifier
-                            .height(240.dp)
+                            .height(65.dp)
                             .fillMaxWidth(0.5f)
                     )
                 },
                 navigationIcon = {
+                    // Botón para crear nuevo producto
                     IconButton(onClick = { navController.navigate(route = Screens.ProductCreation.route)}, modifier = Modifier.fillMaxHeight()) {
                         Icon(imageVector = Icons.Filled.Add, contentDescription = "Crear Producto", modifier = Modifier.size(32.dp))
                     }
                 },
                 actions = {
+                    // Botón de Perfil/Login
                     IconButton(onClick = { navController.navigate(Screens.Login.route)}, modifier = Modifier.fillMaxHeight()) {
                         Icon(imageVector = Icons.Filled.Person, contentDescription = "Perfil", modifier = Modifier.size(32.dp))
                     }
@@ -75,6 +76,7 @@ fun HomeScreen(
             )
         }
     ) { paddingValues ->
+        // Contenido principal de la pantalla
         HomeBodyContent(
             Modifier.padding(paddingValues),
             navController = navController,
@@ -89,13 +91,14 @@ fun HomeBodyContent(
     navController: NavController,
     viewModel: HomeViewModel
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsState() // Obtiene el estado del ViewModel
 
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         when {
+            // Indicador de Carga
             state.isLoading -> {
                 CircularProgressIndicator(
                     modifier = Modifier
@@ -103,9 +106,11 @@ fun HomeBodyContent(
                         .padding(top = 64.dp)
                 )
             }
+            // Mensaje de Error
             state.errorMessage != null -> {
                 Text("Error al cargar productos: ${state.errorMessage}", color = Color.Red)
             }
+            // Grid de Productos
             else -> {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
@@ -119,7 +124,6 @@ fun HomeBodyContent(
                             producto = producto,
                             navController = navController,
                             onComprarClick = { viewModel.onComprarClick(producto.id) },
-                            // ⬅️ CORRECCIÓN 1: Usar el nombre de función correcto en el ViewModel
                             onDeleteClick = {viewModel.onDeleteClick(producto.id) }
                         )
                     }
@@ -134,10 +138,10 @@ fun ProductCard(
     producto: Producto,
     navController: NavController,
     onComprarClick: (String) -> Unit,
-    // ⬅️ CORRECCIÓN 2: Declarar el parámetro 'onDeleteClick' en el Composable
     onDeleteClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Tarjeta individual de cada producto
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
@@ -153,7 +157,7 @@ fun ProductCard(
                     .padding(bottom = 8.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                // Imagen del Producto
+                // Imagen
                 Image(
                     painter = painterResource(id = com.example.proyectotienda.R.drawable.retro),
                     contentDescription = producto.nombre,
@@ -163,7 +167,7 @@ fun ProductCard(
                     contentScale = ContentScale.Crop
                 )
 
-                // Nombre y Descripción
+                // Nombre, Descripción y Precio
                 Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                     Text(
                         text = producto.nombre,
@@ -190,18 +194,18 @@ fun ProductCard(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // ⬅️ CORRECCIÓN 3: Reestructuración del ROW (Botón Comprar y Botón Eliminar)
+                // Fila de acciones (Comprar y Eliminar)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Botón Comprar (Ocupa el espacio restante)
+                    // Botón Comprar
                     Button(
                         onClick = { onComprarClick(producto.id) },
                         modifier = Modifier
-                            .weight(1f) // ⬅️ Ocupa la mayor parte del espacio
+                            .weight(1f)
                             .height(40.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
@@ -214,15 +218,13 @@ fun ProductCard(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    // Ícono de Eliminar (Surface de peligro)
+                    // Ícono de Eliminar
                     Surface(
-                        onClick = {
-                            onDeleteClick(producto.id)
-                        },
+                        onClick = { onDeleteClick(producto.id) },
                         modifier = Modifier
-                            .size(40.dp), // Tamaño igual a la altura del botón
+                            .size(40.dp),
                         shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.error, // Fondo Rojo
+                        color = MaterialTheme.colorScheme.error,
                         shadowElevation = 4.dp
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -237,6 +239,7 @@ fun ProductCard(
                 }
             }
 
+            // Ícono de Editar (Superpuesto en la esquina superior derecha)
             Surface(
                 onClick = {
                     navController.navigate(Screens.ProductUpdate.withId(producto.id))
@@ -258,9 +261,6 @@ fun ProductCard(
                     )
                 }
             }
-
-            // ⬅️ ELIMINACIÓN: El Surface de Eliminar que estaba aquí arriba (Alignment.TopEnd)
-            // Ha sido ELIMINADO porque ahora está en la parte inferior.
         }
     }
 }

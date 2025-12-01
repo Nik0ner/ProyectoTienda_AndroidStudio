@@ -11,71 +11,43 @@ import kotlinx.coroutines.launch
 
 class HomeViewModel : ViewModel() {
 
-    // ----------------------------------------------------
-    // 1. Capa de Datos (Data Layer)
-    // ----------------------------------------------------
-    // Instanciamos el Repositorio. En apps grandes, esto se inyectaría
-    // usando Hilt/Koin (Inyección de Dependencias) para facilitar el testing.
+    // 1. Inicializa el Repositorio (Capa de Datos)
     private val repository = ProductoRepository
 
-    // ----------------------------------------------------
-    // 2. Estado (State Layer)
-    // ----------------------------------------------------
-    // El estado observado por la vista (UI). Contiene la lista de productos.
+    // 2. Estado observable (UI State)
     private val _state = MutableStateFlow(HomeUiState(isLoading = true))
     val state = _state.asStateFlow()
 
     init {
-        // En lugar de cargar datos fijos, comenzamos a escuchar el Repositorio.
+        // Inicia la observación de productos al crear el ViewModel
         observeProductos()
     }
 
-    // ----------------------------------------------------
-    // 3. Lógica (Business Logic - READ)
-    // ----------------------------------------------------
-
-    /**
-     * Función que escucha los cambios en el Repositorio (la base de datos simulada).
-     * Se ejecuta automáticamente cada vez que se añade o elimina un producto.
-     */
+    // Lógica para suscribirse al flujo de datos del Repositorio (READ)
     private fun observeProductos() {
-        // Usamos viewModelScope para ejecutar la observación en el ciclo de vida del ViewModel.
         viewModelScope.launch {
-            // Recolectamos el Flow que emite el Repositorio.
+            // Recolecta el Flow que emite los productos en tiempo real
             repository.getProductos().collect { productos ->
-                // Cuando el Flow emite una nueva lista, actualizamos el estado.
                 _state.update { currentState ->
                     currentState.copy(
                         productos = productos,
-                        isLoading = false // Desactivamos el indicador de carga una vez que tenemos datos
+                        isLoading = false // Desactiva la carga al recibir datos
                     )
                 }
             }
         }
     }
 
-    // ----------------------------------------------------
-    // 4. Manejo de Eventos (Event Handling)
-    // ----------------------------------------------------
-
-    /**
-     * Evento al presionar el botón "Comprar".
-     */
+    // Evento de click para la acción "Comprar"
     fun onComprarClick(productoId: String) {
-        // FUTURO:
-        // 1. Llamar a repository.addProductoToCart(productoId)
-        // 2. Navegar a Screens.Detail(productoId)
+        // Aquí iría la lógica para agregar al carrito o navegar al detalle
         println("FUTURO: Producto ${productoId} añadido al carrito.")
     }
 
-    /**
-     * Evento para borrar un producto (simulando una acción de administrador).
-     */
+    // Evento para borrar un producto (DELETE)
     fun onDeleteClick(productoId: String) {
-        // DELETE: Delegamos la acción de borrado al Repositorio.
         viewModelScope.launch {
-            repository.deleteProducto(productoId)
-            // FUTURO: Añadir manejo de errores aquí (try/catch)
+            repository.deleteProducto(productoId) // Llama a la función de borrado del Repositorio
         }
     }
 }

@@ -20,30 +20,29 @@ fun RecoverPasswordScreen(
     val message by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Colores del proyecto
     val Yellow = Color(0xFFFFFF33)
     val DarkCard = Color(0xFF1A1A1A)
 
-    // Mostrar snackbar + volver al login automáticamente
+    // Efecto: Maneja mensajes de estado (snackbar y navegación)
     LaunchedEffect(message) {
         message?.let { msg ->
 
             // Muestra Snackbar
             snackbarHostState.showSnackbar(msg)
 
-            // Navega al login si el correo fue enviado
+            // Navega al login si el correo fue enviado exitosamente
             if (msg == "Correo de recuperación enviado.") {
                 navController.navigate(Screens.Login.route) {
-                    popUpTo(Screens.Login.route) { inclusive = true }
+                    popUpTo(Screens.Login.route) { inclusive = true } // Limpia la pila de navegación
                 }
             }
 
-            viewModel.clearMessage()
+            viewModel.clearMessage() // Limpia el mensaje en el ViewModel
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) } // Host para mostrar mensajes
     ) { paddingValues ->
 
         Box(
@@ -54,7 +53,7 @@ fun RecoverPasswordScreen(
             contentAlignment = Alignment.Center
         ) {
 
-            // ------------------ CARD PRINCIPAL ------------------
+            // CARD PRINCIPAL: Contenedor del formulario
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = DarkCard),
@@ -69,6 +68,7 @@ fun RecoverPasswordScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
+                    // Título de la pantalla
                     Text(
                         text = "Recuperar contraseña",
                         style = MaterialTheme.typography.headlineSmall,
@@ -77,6 +77,7 @@ fun RecoverPasswordScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
+                    // CAMPO: Correo Electrónico
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
@@ -94,6 +95,7 @@ fun RecoverPasswordScreen(
 
                     Spacer(modifier = Modifier.height(30.dp))
 
+                    // BOTÓN: Enviar Correo de Recuperación
                     Button(
                         onClick = { viewModel.sendRecoveryEmail(email) },
                         modifier = Modifier
@@ -110,6 +112,7 @@ fun RecoverPasswordScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // BOTÓN: Volver al login
                     TextButton(onClick = { navController.popBackStack() }) {
                         Text("Volver", color = Yellow)
                     }

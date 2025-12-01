@@ -1,4 +1,4 @@
-package com.example.proyectotienda.config // Cambia esto por tu paquete
+package com.example.proyectotienda.config
 
 import android.app.Application
 import com.google.firebase.FirebaseApp

@@ -8,40 +8,32 @@ import kotlinx.coroutines.tasks.await
 
 object ProductoRepository {
 
-    // ⬅️ 1. Referencia a la base de datos Firestore
     private val db = FirebaseFirestore.getInstance()
-    private val productosCollection = db.collection("productos")
+    private val productosCollection = db.collection("productos") // Enlace a la colección "productos" en Firebase
 
-    // ----------------------------------------------------
-    // READ (LEER): Usamos un Flow para escuchar cambios en tiempo real
-    // ----------------------------------------------------
-
+    // Leer: Obtiene todos los productos en tiempo real usando un Flow
     fun getProductos() = callbackFlow {
-        // Usa un Listener para escuchar la colección
+        // Usa Listener para escuchar cambios en la colección
         val subscription = productosCollection
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error) // Cierra el Flow si hay un error
+                    close(error)
                     return@addSnapshotListener
                 }
 
-                // Mapea los documentos de Firebase a objetos Producto
+                // Mapea documentos de Firebase a la lista de Producto
                 val productos = snapshot?.documents?.mapNotNull { document ->
                     document.toObject(Producto::class.java)
                 } ?: emptyList()
 
-                // Envía la nueva lista al Flow
                 trySend(productos)
             }
 
-        // ⬅️ Cuando el colector deja de escuchar, se cierra el listener
+        // Cierra el listener de Firebase al cerrar el Flow
         awaitClose { subscription.remove() }
     }
 
-    // ----------------------------------------------------
-    // READ BY ID (LEER POR ID): Función suspendida para la edición
-    // ----------------------------------------------------
-
+    // Leer por ID: Obtiene un producto específico
     suspend fun getProductoById(id: String): Producto? {
         return try {
             val document = productosCollection.document(id).get().await()
@@ -51,28 +43,17 @@ object ProductoRepository {
         }
     }
 
-    // ----------------------------------------------------
-    // CREATE (CREAR): Función suspendida para subir datos
-    // ----------------------------------------------------
-
+    // Crear: Agrega un nuevo producto a la base de datos
     suspend fun addProducto(producto: Producto) {
-        // Firestore crea automáticamente el ID del documento
         productosCollection.add(producto).await()
     }
 
-    // ----------------------------------------------------
-    // UPDATE (ACTUALIZAR): Usa el ID del producto para actualizar
-    // ----------------------------------------------------
-
+    // Actualizar: Modifica un producto existente usando su ID
     suspend fun updateProducto(updatedProducto: Producto) {
-        // Usamos set(updatedProducto) para reemplazar el documento completo
         productosCollection.document(updatedProducto.id).set(updatedProducto).await()
     }
 
-    // ----------------------------------------------------
-    // DELETE (BORRAR): Usa el ID del producto para borrar
-    // ----------------------------------------------------
-
+    // Eliminar: Borra un producto por su ID
     suspend fun deleteProducto(productoId: String) {
         productosCollection.document(productoId).delete().await()
     }

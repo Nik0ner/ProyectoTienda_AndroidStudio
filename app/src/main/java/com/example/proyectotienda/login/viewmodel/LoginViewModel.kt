@@ -12,13 +12,12 @@ import kotlinx.coroutines.tasks.await
 
 class LoginViewModel : ViewModel() {
 
-    private val auth = FirebaseAuth.getInstance()
+    private val auth = FirebaseAuth.getInstance() // Inicializa Firebase Authentication
 
     private val _state = MutableStateFlow(LoginUiState())
-    val state = _state.asStateFlow()
-    // ------------------------------------
+    val state = _state.asStateFlow() // Estado observado por la UI
     // 1. MANEJADORES DE INPUT
-    // ------------------------------------
+    // Actualiza el email en el estado
     fun onEmailChange(newEmail: String) {
         _state.update {
             it.copy(
@@ -28,6 +27,7 @@ class LoginViewModel : ViewModel() {
         }
     }
 
+    // Actualiza la contraseña en el estado
     fun onPasswordChange(newPassword: String) {
         _state.update {
             it.copy(
@@ -36,22 +36,24 @@ class LoginViewModel : ViewModel() {
             )
         }
     }
-    // ------------------------------------
+
     // 2. LÓGICA DE LOGIN CON FIREBASE
-    // ------------------------------------
+    // Lanza la solicitud de inicio de sesión
     fun onLoginClick(s: LoginUiState) {
         viewModelScope.launch {
 
             try {
+                // Llama a la API de Firebase para autenticar
                 auth.signInWithEmailAndPassword(s.email, s.password).await()
                 _state.update {
                     it.copy(
-                        isLoginSuccessful = true,
+                        isLoginSuccessful = true, // Marca el éxito
                         generalErrorMessage = null,
                     )
                 }
 
             } catch (e: Exception) {
+                // Maneja el error y traduce el mensaje
                 val translatedMessage = getTranslatedErrorMessage(e)
 
                 _state.update {
@@ -65,37 +67,32 @@ class LoginViewModel : ViewModel() {
         }
     }
 
-    // ------------------------------------
     // 3. FUNCIONES AUXILIARES
-    // ------------------------------------
+    // Mapea los códigos de error de Firebase a mensajes legibles
     private fun getTranslatedErrorMessage(exception: Exception): String {
-        // 💡 Intenta primero castear la excepción a FirebaseAuthException
+        // Intenta castear a FirebaseAuthException para obtener el código
         return if (exception is FirebaseAuthException) {
-            // Usa el errorCode y normalízalo a minúsculas para un chequeo más seguro
             val errorCode = exception.errorCode.lowercase()
 
             when (errorCode) {
-                // Códigos comunes con prefijo:
+                // Errores de credenciales y cuenta
                 "auth/invalid-credential", "error_invalid_credential" -> "Credenciales no válidas. Verifica tu correo y contraseña."
-                "auth/invalid-email" -> "El formato del correo electrónico no es válido."
-                "auth/wrong-password" -> "Contraseña incorrecta."
-                "auth/user-not-found" -> "No existe un usuario registrado con este correo."
+                "auth/invalid-email", "error_invalid_email" -> "El formato del correo electrónico no es válido."
+                "auth/wrong-password", "error_wrong_password" -> "Contraseña incorrecta."
+                "auth/user-not-found", "error_user_not_found" -> "No existe un usuario registrado con este correo."
                 "auth/user-disabled" -> "Esta cuenta ha sido deshabilitada."
                 "auth/too-many-requests" -> "Demasiados intentos fallidos. Inténtalo más tarde."
-                // Códigos comunes sin prefijo (legacy):
-                "error_invalid_email" -> "El formato del correo electrónico no es válido."
-                "error_wrong_password" -> "Contraseña incorrecta."
-                "error_user_not_found" -> "No existe un usuario registrado con este correo."
 
-                // Caso donde el error existe, pero no está en el mapeo:
+                // Error desconocido de autenticación
                 else -> "Error de autenticación desconocido (Code: ${exception.errorCode})."
             }
         } else {
-            // Si no es un FirebaseAuthException, asumimos un problema de red o interno.
+            // Error de red o conexión
             "Ocurrió un error de conexión. Revisa tu red."
         }
     }
 
+    // Resetea el indicador de éxito para evitar re-navegación
     fun resetLoginSuccessful() {
         _state.update { it.copy(isLoginSuccessful = false) }
     }

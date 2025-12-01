@@ -27,7 +27,6 @@ import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.product_creation.viewmodel.ProductCreationUiState
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
-
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
@@ -37,18 +36,16 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.shape.RoundedCornerShape
 import java.io.InputStream
-import java.io.OutputStream
 import androidx.compose.foundation.shape.CircleShape
 
-// ---------------------------
-// FUNCIONES AUXILIARES
-// ---------------------------
 
+// Función auxiliar para crear una URI temporal para la cámara
 fun createCameraTempUri(context: Context): Uri {
     val tempFile = File.createTempFile("temp_image", ".jpg", context.filesDir).apply { createNewFile() }
     return FileProvider.getUriForFile(context, "com.example.proyectotienda.fileprovider", tempFile)
 }
 
+// Función auxiliar para copiar la URI seleccionada a un archivo temporal (manejo de permisos)
 fun copyUriToTempFile(context: Context, uri: Uri): Uri? {
     return try {
         val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
@@ -57,16 +54,11 @@ fun copyUriToTempFile(context: Context, uri: Uri): Uri? {
             tempFile.outputStream().use { output -> input.copyTo(output) }
         }
         FileProvider.getUriForFile(context, "com.example.proyectotienda.fileprovider", tempFile)
-    } catch (e: Exception) {
-        null
-    }
+    } catch (e: Exception) { null }
 }
 
 
-// ---------------------------
 // PANTALLA PRINCIPAL
-// ---------------------------
-
 @Composable
 fun ProductCreationScreen(
     navController: NavController,
@@ -78,6 +70,7 @@ fun ProductCreationScreen(
 
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Launcher para seleccionar imagen de Galería
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
@@ -93,6 +86,7 @@ fun ProductCreationScreen(
         }
     )
 
+    // Launcher para tomar foto con la Cámara
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
@@ -104,6 +98,7 @@ fun ProductCreationScreen(
         }
     )
 
+    // Launcher para solicitar permiso de la cámara
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { granted ->
@@ -118,6 +113,7 @@ fun ProductCreationScreen(
         }
     )
 
+    // Efecto: Navegación tras creación exitosa
     LaunchedEffect(estado.creacionExitosa) {
         if (estado.creacionExitosa) {
             navController.navigate(Screens.HomeScreen.route) {
@@ -127,6 +123,7 @@ fun ProductCreationScreen(
         }
     }
 
+    // Efecto: Mostrar Snackbar con mensaje de error
     LaunchedEffect(estado.errorMessage) {
         estado.errorMessage?.let { msg ->
             snackbarHostState.showSnackbar(msg)
@@ -134,6 +131,7 @@ fun ProductCreationScreen(
         }
     }
 
+    // Diálogo de selección de origen de la imagen (Cámara o Galería)
     if (estado.showSourceDialog) {
         ImageSourceDialog(
             onDismiss = { viewModel.setShowSourceDialog(false) },
@@ -154,6 +152,7 @@ fun ProductCreationScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
+        // Tarjeta principal del formulario
         ProductCreationCard(
             modifier = Modifier.padding(it),
             estado = estado,
@@ -164,10 +163,7 @@ fun ProductCreationScreen(
 }
 
 
-// ---------------------------
-// TARJETA (Similar al login pero con otros colores)
-// ---------------------------
-
+// TARJETA DE FORMULARIO
 @Composable
 fun ProductCreationCard(
     modifier: Modifier = Modifier,
@@ -177,9 +173,10 @@ fun ProductCreationCard(
 ) {
     val context = LocalContext.current
 
-    val darkGray = Color(0xFF111111)           // Fondo tarjeta (casi negro)
-    val yellow = Color(0xFFFFFF33)            // Amarillo OFICIAL 🚨
+    val darkGray = Color(0xFF111111)           // Fondo tarjeta
+    val yellow = Color(0xFFFFFF33)            // Color de acento
 
+    // Carga la imagen seleccionada para previsualización
     val previewBitmap: ImageBitmap? = remember(estado.imagenUri) {
         estado.imagenUri?.let { uri ->
             try {
@@ -211,7 +208,7 @@ fun ProductCreationCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // ----------- BOTÓN CERRAR (icono negro) -------------
+                // BOTÓN CERRAR/VOLVER
                 Box(
                     Modifier
                         .fillMaxWidth()
@@ -221,12 +218,12 @@ fun ProductCreationCard(
                         onClick = { navController.popBackStack() },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .offset(x = 8.dp, y = -8.dp) // 👉 Empuja más a la esquina
+                            .offset(x = 8.dp, y = -8.dp)
                     ) {
                         Icon(
                             Icons.Filled.Close,
                             contentDescription = "Cerrar",
-                            tint = Color(0xFFFFFF33) // 👉 Amarillo oficial
+                            tint = yellow
                         )
                     }
                 }
@@ -239,7 +236,7 @@ fun ProductCreationCard(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ----------- CAMPOS DE TEXTO -------------
+                // CAMPO: Nombre del Producto
                 OutlinedTextField(
                     value = estado.nombre,
                     onValueChange = { viewModel.onNombreChange(it) },
@@ -260,6 +257,7 @@ fun ProductCreationCard(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // CAMPO: Descripción
                 OutlinedTextField(
                     value = estado.descripcion,
                     onValueChange = { viewModel.onDescripcionChange(it) },
@@ -280,6 +278,7 @@ fun ProductCreationCard(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // CAMPO: Precio
                 OutlinedTextField(
                     value = estado.precio,
                     onValueChange = { viewModel.onPrecioChange(it) },
@@ -301,13 +300,13 @@ fun ProductCreationCard(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ----------- BOTÓN CIRCULAR PARA IMAGEN -------------
+                // BOTÓN CIRCULAR para seleccionar/subir imagen
                 Button(
                     onClick = { viewModel.setShowSourceDialog(true) },
                     modifier = Modifier.size(56.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = yellow,
-                        contentColor = Color.Black   // Icono negro
+                        contentColor = Color.Black
                     ),
                     shape = CircleShape,
                     contentPadding = PaddingValues(0.dp)
@@ -317,6 +316,7 @@ fun ProductCreationCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Previsualización de la imagen seleccionada
                 if (previewBitmap != null) {
                     Image(
                         bitmap = previewBitmap,
@@ -331,7 +331,7 @@ fun ProductCreationCard(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ----------- BOTÓN GUARDAR -------------
+                // BOTÓN GUARDAR PRODUCTO
                 Button(
                     onClick = { viewModel.onGuardarProductoClick() },
                     modifier = Modifier
@@ -339,7 +339,7 @@ fun ProductCreationCard(
                         .height(50.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = yellow,
-                        contentColor = Color.Black    // TEXTO NEGRO
+                        contentColor = Color.Black
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -351,7 +351,7 @@ fun ProductCreationCard(
 }
 
 
-
+// Función para definir colores de TextField (actualmente no utilizada en el código principal)
 @Composable
 fun whiteTextFieldColors() = TextFieldDefaults.colors(
     focusedTextColor = Color.White,
@@ -364,16 +364,15 @@ fun whiteTextFieldColors() = TextFieldDefaults.colors(
 )
 
 
-// ---------------------------
-// DIÁLOGO SELECCIÓN IMAGEN
-// ---------------------------
 
+// DIÁLOGO SELECCIÓN IMAGEN
 @Composable
 fun ImageSourceDialog(
     onDismiss: () -> Unit,
     onGalleryClick: () -> Unit,
     onCameraClick: () -> Unit
 ) {
+    // Diálogo modal para elegir Galería o Cámara
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Seleccionar imagen") },

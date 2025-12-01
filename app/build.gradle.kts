@@ -49,7 +49,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-
     // COMPOSE
     implementation(platform(libs.androidx.compose.bom))
 
@@ -57,31 +56,24 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
 
-// SOLO UNA librería Material3
+// Material3
     implementation(libs.androidx.compose.material3)
-
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
 // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.3")
 
-// ----------------------------------------------------------------------
-//                      🔥 FIREBASE (Limpio)
-// ----------------------------------------------------------------------
-
-// Siempre primero la BoM (Bill of Materials) para gestionar versiones de Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
 
-// Dependencia de Firebase Auth (usa BoM para la versión)
+// Dependencia de Firebase Auth
     implementation("com.google.firebase:firebase-auth-ktx")
 
-// Dependencia de Firebase Firestore (usa BoM para la versión)
+// Dependencia de Firebase Firestore
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-auth-ktx:22.3.1")// borrar despues
 
-// Dependencia para usar .await() en las tareas de Firebase (corutinas)
-// Usamos una versión específica y eliminamos la duplicada.
+// Dependencia para las tareas de Firebase
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
 // Otros

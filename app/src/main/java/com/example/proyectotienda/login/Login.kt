@@ -19,14 +19,12 @@ import com.example.proyectotienda.login.viewmodel.LoginViewModel
 import com.example.proyectotienda.navigation.Screens
 import com.example.proyectotienda.ui.theme.AmarilloClaro
 import com.example.proyectotienda.ui.theme.YellowNeonBright
-// Imports para los íconos y visual transformation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,7 +38,7 @@ fun LoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    // Efecto de Navegación
+    // Lógica de Navegación tras inicio de sesión exitoso
     LaunchedEffect(state.isLoginSuccessful) {
         if (state.isLoginSuccessful) {
             navController.navigate(Screens.HomeScreen.route) {
@@ -51,6 +49,7 @@ fun LoginScreen(
     }
 
     Scaffold { paddingValues ->
+        // Contenido Principal de la pantalla (Cuerpo)
         BodyContent(
             Modifier.padding(paddingValues),
             navController = navController,
@@ -76,7 +75,7 @@ fun BodyContent(
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // --- INICIO: CARD CON DEGRADADO ---
+        // CARD PRINCIPAL con diseño de degradado
         Surface(
             color = Color.Transparent,
             shape = RoundedCornerShape(24.dp),
@@ -96,6 +95,7 @@ fun BodyContent(
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Logo de la aplicación
                 Image(
                     painter = painterResource(id = R.drawable.trafalgar),
                     contentDescription = "Logo",
@@ -104,7 +104,7 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // --- CAMPO DE CORREO ---
+                // CAMPO DE CORREO
                 OutlinedTextField(
                     value = state.email,
                     onValueChange = { viewModel.onEmailChange(it) },
@@ -113,24 +113,15 @@ fun BodyContent(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
-                        // Fondo del TextField (usa el color del fondo amarillo)
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-
-                        // BORDES NEGROS
                         focusedIndicatorColor = Color.Black,
                         unfocusedIndicatorColor = Color.Black,
-
-                        // TEXTO NEGRO
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
                         cursorColor = Color.Black,
-
-                        // LABEL también negro
                         focusedLabelColor = Color.Black,
                         unfocusedLabelColor = Color.Black,
-
-                        // COLOR DE ERROR (por si lo usas)
                         errorIndicatorColor = MaterialTheme.colorScheme.error,
                         errorLabelColor = MaterialTheme.colorScheme.error
                     ),
@@ -142,7 +133,7 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- ⬇️ CAMPO DE CONTRASEÑA CORREGIDO ⬇️ ---
+                // CAMPO DE CONTRASEÑA con visibilidad
                 OutlinedTextField(
                     value = state.password,
                     onValueChange = { viewModel.onPasswordChange(it) },
@@ -151,7 +142,7 @@ fun BodyContent(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
 
-                    // Mostrar / ocultar contraseña
+                    // Control de visibilidad de contraseña
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
 
                     trailingIcon = {
@@ -164,37 +155,27 @@ fun BodyContent(
                             Icon(
                                 imageVector = image,
                                 contentDescription = "Mostrar/Ocultar contraseña",
-                                tint = Color.Black // Ícono negro para que contraste con el fondo amarillo
+                                tint = Color.Black
                             )
                         }
                     },
 
                     colors = TextFieldDefaults.colors(
-                        // Fondo transparente (usa el fondo amarillo)
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-
-                        // Borde negro
                         focusedIndicatorColor = Color.Black,
                         unfocusedIndicatorColor = Color.Black,
-
-                        // Texto negro
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
                         cursorColor = Color.Black,
-
-                        // Label negro
                         focusedLabelColor = Color.Black,
                         unfocusedLabelColor = Color.Black,
-
-                        // Colores de error
                         errorIndicatorColor = MaterialTheme.colorScheme.error,
                         errorLabelColor = MaterialTheme.colorScheme.error
                     ),
 
                     shape = RoundedCornerShape(12.dp)
                 )
-                // --- FIN CAMPO DE CONTRASEÑA ---
 
                 if (state.showPasswordError) {
                     Text("La contraseña es obligatoria.", color = MaterialTheme.colorScheme.error)
@@ -202,7 +183,7 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Mensaje de error general
+                // Mensaje de error general de Firebase/Conexión
                 state.generalErrorMessage?.let { msg ->
                     Text(msg, color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.height(12.dp))
@@ -210,7 +191,7 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // --- BOTÓN DE LOGIN ---
+                // BOTÓN DE LOGIN
                 Button(
                     onClick = { viewModel.onLoginClick(state) },
                     colors = ButtonDefaults.buttonColors(
@@ -224,7 +205,7 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Botones de texto
+                // Enlace a Registro
                 TextButton(
                     onClick = { navController.navigate(Screens.Form.route) }
                 ) {
@@ -236,6 +217,7 @@ fun BodyContent(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // Enlace a Recuperar Contraseña
                 TextButton(onClick = { navController.navigate(Screens.RecoverPassword.route)}) {
                     Text(
                         "¿Olvidaste tu contraseña?",
